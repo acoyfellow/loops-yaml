@@ -40,7 +40,7 @@
 
   <footer>
     <a href="https://github.com/acoyfellow/loops-yaml">github.com/acoyfellow/loops-yaml</a>
-    <span class="dim">MIT · Mr. 0.0.1</span>
+    <span class="dim">MIT</span>
   </footer>
 </main>
 

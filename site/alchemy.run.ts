@@ -18,9 +18,11 @@ const HOSTNAME = process.env.SITE_HOSTNAME ?? 'loops-yaml.coey.dev';
 const app = await alchemy('loops-yaml-site', { stage: STAGE });
 
 const worker = await Worker(`loops-yaml-site-${STAGE}`, {
-  entrypoint: './build/worker.js',
+  entrypoint: './build/worker.bundled.mjs',
   compatibilityDate: '2026-04-23',
   compatibility: 'node',
+  // No public workers.dev URL; reachable only via the custom domain on prod.
+  url: false,
   adopt: true,
 });
 

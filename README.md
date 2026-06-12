@@ -22,7 +22,15 @@ loops logs review     # tail the last run
 ## Install
 
 ```bash
-bun add -g loops-yaml   # or run from a clone: bun src/cli.ts
+git clone https://github.com/acoyfellow/loops-yaml
+cd loops-yaml && bun install
+bun src/cli.ts list
+```
+
+Or install straight from the repo:
+
+```bash
+bun add -g github:acoyfellow/loops-yaml
 ```
 
 Requires [Bun](https://bun.sh).

@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "loops-yaml-site",
-  "main": "./build/worker.js",
+  "main": "./build/worker.bundled.mjs",
   "compatibility_date": "2026-04-23",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false
 }
