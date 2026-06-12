@@ -1,5 +1,5 @@
 <script lang="ts">
-  const install = 'bun add -g loops-yaml';
+  const install = 'bun add -g github:acoyfellow/loops-yaml';
   const yaml = `loops:
   review:
     schedule: "0 8 * * *"   # 8am daily; omit for on-demand
