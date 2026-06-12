@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.astro/
+.alchemy/
+.env
+.loops/
+site/build/
+site/bundles.generated.ts

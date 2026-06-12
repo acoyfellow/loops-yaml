@@ -1,0 +1,22 @@
+{
+  "name": "loops-yaml",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Run commands on a cron schedule, or on demand. A loop is a schedule plus a command — nothing else.",
+  "bin": {
+    "loops": "./src/cli.ts"
+  },
+  "scripts": {
+    "loops": "bun src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@types/bun": "latest",
+    "typescript": "^5.9.3"
+  }
+}

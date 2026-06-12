@@ -1,0 +1,12 @@
+# A loop is a schedule plus a command. Nothing else.
+# Omit `schedule` to make a loop on-demand only (`loops run <name>`).
+
+loops:
+  hello:
+    schedule: "*/5 * * * *"   # every 5 minutes
+    run: echo "hello from the $LOOP_NAME loop at $(date)"
+
+  # review:
+  #   schedule: "0 8 * * *"   # 8am daily
+  #   run: ./scripts/review.sh
+  #   cwd: ../review-loop-lab
