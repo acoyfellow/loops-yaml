@@ -1,0 +1,15 @@
+{
+  "name": "loops.yaml",
+  "short_name": "loops.yaml",
+  "description": "Run commands on a cron schedule, or on demand. A loop is a schedule plus a command — nothing else.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1626",
+  "theme_color": "#0b1626",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

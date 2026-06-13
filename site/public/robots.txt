@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://loops-yaml.coey.dev/sitemap.xml

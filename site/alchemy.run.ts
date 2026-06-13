@@ -10,12 +10,14 @@
  * Optional env: STAGE (default "prod"), SITE_HOSTNAME
  */
 import alchemy from 'alchemy';
-import { CustomDomain, Worker } from 'alchemy/cloudflare';
+import { Assets, CustomDomain, Worker } from 'alchemy/cloudflare';
 
 const STAGE = process.env.STAGE ?? 'prod';
 const HOSTNAME = process.env.SITE_HOSTNAME ?? 'loops-yaml.coey.dev';
 
 const app = await alchemy('loops-yaml-site', { stage: STAGE });
+
+const assets = await Assets({ path: './public' });
 
 const worker = await Worker(`loops-yaml-site-${STAGE}`, {
   entrypoint: './build/worker.bundled.mjs',
@@ -24,6 +26,9 @@ const worker = await Worker(`loops-yaml-site-${STAGE}`, {
   // No public workers.dev URL; reachable only via the custom domain on prod.
   url: false,
   adopt: true,
+  bindings: {
+    ASSETS: assets,
+  },
 });
 
 if (STAGE === 'prod') {
