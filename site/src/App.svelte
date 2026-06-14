@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Fiber from './Fiber.svelte';
 
   const install = 'bun add -g github:acoyfellow/loops-yaml';
   const yaml = `loops:
@@ -15,31 +16,33 @@
 </script>
 
 <div class="page">
-  <div class="wrap">
-    <header class="head">
-      <div class="brand">
-        <span class="mark" aria-hidden="true"></span>
-        <span class="wordmark">loops<span class="ext">.yaml</span></span>
-      </div>
-      <nav class="nav">
-        <a class="navlink" href="/recipes">Recipes</a>
-        <a class="ghlink" href="https://github.com/acoyfellow/loops-yaml">GitHub ↗</a>
-      </nav>
-    </header>
+  <!-- full-bleed hero band so the fiber spans the whole viewport width -->
+  <section class="hero">
+    <div class="wash" aria-hidden="true"></div>
+    <Fiber />
+    <div class="wrap hero-wrap">
+      <header class="head">
+        <div class="brand">
+          <span class="mark" aria-hidden="true"></span>
+          <span class="wordmark">loops<span class="ext">.yaml</span></span>
+        </div>
+        <nav class="nav">
+          <a class="navlink" href="/recipes">Recipes</a>
+          <a class="ghlink" href="https://github.com/acoyfellow/loops-yaml">GitHub ↗</a>
+        </nav>
+      </header>
 
-    <section class="hero">
-      <div class="wash" aria-hidden="true"></div>
       <div class="hero-copy">
         <h1>A loop is a schedule<br />plus a command.</h1>
         <p class="lede">Run commands on a cron schedule, or on demand. Nothing else to learn.</p>
         <div class="cta"><code>{install}</code></div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 
   <!-- one continuous painted color field spans BOTH sections; the cream→slate
        transition lives inside the image, so there is no seam or gap. -->
-  <section class="canvas" style="background-image:url('/art/field-cream-blue.jpg')">
+  <section class="canvas" style="background-image:url('/art/field-cream-blue-v2.jpg')">
     <div class="wrap canvas-inner">
       <div class="on-cream">
         <p class="kicker dark">define</p>
@@ -60,8 +63,8 @@
     <section class="scope">
       <p class="kicker">scope</p>
       <p class="prose">
-        The runner schedules and runs. Read-only, receipts, models, tokens — those live
-        inside <em>your</em> command, never in the tool.
+        It runs your command on a timer. That's the whole tool. Whatever the command does —
+        hit an API, back up a database, call a model — is up to <em>you</em>. We don't get in the way.
       </p>
     </section>
 
@@ -125,18 +128,19 @@
   .ghlink { color: var(--ink-dim); text-decoration: none; font-size: 0.9rem; }
   .ghlink:hover { color: var(--ink); }
 
-  /* hero — soft atmospheric color-field wash bleeding behind the words */
-  .hero { position: relative; padding: 5rem 0 5.5rem; }
+  /* hero — full-bleed band; fiber + wash span the viewport, copy stays in .wrap */
+  .hero { position: relative; overflow: hidden; padding-bottom: 1rem; }
+  .hero-wrap { position: relative; z-index: 1; padding-top: 0; padding-bottom: 5rem; }
   .wash {
     position: absolute;
     top: 0; right: 0; bottom: 0;
-    width: min(52%, 420px);
-    background: radial-gradient(120% 90% at 75% 40%, #1d3a5c 0%, rgba(29, 58, 92, 0) 70%);
+    width: min(60%, 720px);
+    background: radial-gradient(120% 90% at 80% 40%, #1d3a5c 0%, rgba(29, 58, 92, 0) 70%);
     filter: blur(8px);
     opacity: 0.8;
     pointer-events: none;
   }
-  .hero-copy { position: relative; }
+  .hero-copy { position: relative; z-index: 1; padding: 4rem 0 1rem; }
   h1 {
     font-size: clamp(2.1rem, 6vw, 3.6rem);
     line-height: 1.04; letter-spacing: -0.04em; margin: 0; font-weight: 600;
@@ -156,8 +160,11 @@
     background-repeat: no-repeat;
   }
   .canvas-inner { display: grid; }
-  .on-cream { padding: 3.4rem 0 5.5rem; color: #1a2740; }
-  .on-slate { padding: 2.5rem 0 4rem; color: #11203a; }
+  /* keep text clear of the torn deckle: cream content ends well above the tear,
+     slate content starts well below it */
+  .canvas-inner { min-height: 600px; }
+  .on-cream { padding: 3.4rem 0 7rem; color: #1a2740; }
+  .on-slate { padding: 5.5rem 0 4rem; color: #11203a; }
   .kicker.slate { color: #3a4a63; }
 
   .kicker {
