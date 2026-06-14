@@ -5,6 +5,8 @@ import { bundles } from './bundles.generated.js';
 import App from './src/App.svelte';
 // @ts-expect-error -- esbuild-svelte emits a Svelte component module; types are not first-class here.
 import Recipes from './src/Recipes.svelte';
+// @ts-expect-error -- esbuild-svelte emits a Svelte component module; types are not first-class here.
+import Share from './src/Share.svelte';
 import { headMeta } from './src/head';
 
 type Env = { ASSETS: { fetch: (req: Request) => Promise<Response> } };
@@ -38,6 +40,15 @@ app.get(
       description:
         'A grounded collection of small, useful loops: backups, health checks, Cloudflare automation, watchers. VPS + agent + Cloudflare = freedom through simplicity.',
     }),
+    props: {},
+  }),
+);
+
+app.get(
+  '/share',
+  svelteRenderer(Share, {
+    hydrateAs: 'share',
+    title: 'loops.yaml',
     props: {},
   }),
 );

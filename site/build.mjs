@@ -6,6 +6,7 @@ const result = await buildHonoSvelte({
   components: {
     app: './src/App.svelte',
     recipes: './src/Recipes.svelte',
+    share: './src/Share.svelte',
   },
 });
 
