@@ -1,0 +1,28 @@
+{
+  "comment": "Shared cron vectors. Every impl must agree: does <expr> fire at <time>? Time is local wall-clock fields, not a timezone test.",
+  "cases": [
+    { "expr": "* * * * *", "time": "2026-06-14T10:30:00", "fire": true },
+    { "expr": "30 8 * * *", "time": "2026-06-14T08:30:00", "fire": true },
+    { "expr": "30 8 * * *", "time": "2026-06-14T08:31:00", "fire": false },
+    { "expr": "30 8 * * *", "time": "2026-06-14T09:30:00", "fire": false },
+    { "expr": "*/15 * * * *", "time": "2026-06-14T10:00:00", "fire": true },
+    { "expr": "*/15 * * * *", "time": "2026-06-14T10:15:00", "fire": true },
+    { "expr": "*/15 * * * *", "time": "2026-06-14T10:07:00", "fire": false },
+    { "expr": "0 9-17 * * 1-5", "time": "2026-06-12T09:00:00", "fire": true, "note": "Friday 09:00" },
+    { "expr": "0 9-17 * * 1-5", "time": "2026-06-13T09:00:00", "fire": false, "note": "Saturday" },
+    { "expr": "0 9-17 * * 1-5", "time": "2026-06-12T18:00:00", "fire": false, "note": "after 17" },
+    { "expr": "0 0 * * 0", "time": "2026-06-14T00:00:00", "fire": true, "note": "Sunday via 0" },
+    { "expr": "0 0 * * 7", "time": "2026-06-14T00:00:00", "fire": true, "note": "Sunday via 7" },
+    { "expr": "10-20/2 * * * *", "time": "2026-06-14T10:14:00", "fire": true },
+    { "expr": "10-20/2 * * * *", "time": "2026-06-14T10:15:00", "fire": false },
+    { "expr": "0 12 1 1 *", "time": "2026-01-01T12:00:00", "fire": true },
+    { "expr": "0 12 1 1 *", "time": "2026-01-02T12:00:00", "fire": false }
+  ],
+  "invalid": [
+    "* * *",
+    "60 * * * *",
+    "* 24 * * *",
+    "*/0 * * * *",
+    "a b c d e"
+  ]
+}

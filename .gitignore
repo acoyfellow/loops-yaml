@@ -6,3 +6,4 @@ dist/
 .loops/
 site/build/
 site/bundles.generated.ts
+site/svelte-hono-*.tgz

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# loops — flavor dispatcher. Routes to an implementation of loops-spec.v0.
+# Default: the reference TypeScript impl. Override with LOOPS_IMPL or --impl=<lang>.
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+impl="${LOOPS_IMPL:-ts}"
+
+# --impl=<lang> (consumed here, not passed to the impl)
+args=()
+for a in "$@"; do
+  case "$a" in
+    --impl=*) impl="${a#--impl=}" ;;
+    *) args+=("$a") ;;
+  esac
+done
+
+case "$impl" in
+  ts)
+    exec bun "$here/src/cli.ts" "${args[@]}"
+    ;;
+  go|rust|zig)
+    bin="$here/impl/$impl/loops"
+    if [[ ! -x "$bin" ]]; then
+      echo "loops: impl '$impl' not built — see impl/$impl/README.md" >&2
+      exit 1
+    fi
+    exec "$bin" "${args[@]}"
+    ;;
+  *)
+    echo "loops: unknown impl '$impl' (try: ts, go, rust)" >&2
+    exit 1
+    ;;
+esac

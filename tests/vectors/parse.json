@@ -1,0 +1,40 @@
+{
+  "comment": "Shared loops.yaml parse vectors. Each `input` parses to `loops` (or `error`).",
+  "cases": [
+    {
+      "name": "minimal on-demand",
+      "input": "loops:\n  build:\n    run: bun run build\n",
+      "loops": { "build": { "run": "bun run build" } }
+    },
+    {
+      "name": "schedule + cwd + inline comment",
+      "input": "loops:\n  review:\n    schedule: \"0 8 * * *\"   # 8am\n    run: ./review.sh\n    cwd: ../lab\n",
+      "loops": { "review": { "schedule": "0 8 * * *", "run": "./review.sh", "cwd": "../lab" } }
+    },
+    {
+      "name": "quotes stripped, bare scalar",
+      "input": "loops:\n  x:\n    run: 'echo hi'\n",
+      "loops": { "x": { "run": "echo hi" } }
+    },
+    {
+      "name": "comments and blank lines ignored",
+      "input": "# top\nloops:\n\n  # a loop\n  y:\n    run: echo y\n",
+      "loops": { "y": { "run": "echo y" } }
+    },
+    {
+      "name": "missing run is an error",
+      "input": "loops:\n  bad:\n    schedule: \"* * * * *\"\n",
+      "error": "loop \"bad\" is missing a run command"
+    },
+    {
+      "name": "unknown key is an error",
+      "input": "loops:\n  bad:\n    run: echo\n    retries: 3\n",
+      "error": "loop \"bad\" has unknown key: retries"
+    },
+    {
+      "name": "no loops map is an error",
+      "input": "nope: true\n",
+      "error": "no loops map"
+    }
+  ]
+}

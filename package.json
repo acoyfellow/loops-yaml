@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Run commands on a cron schedule, or on demand. A loop is a schedule plus a command — nothing else.",
   "bin": {
-    "loops": "./src/cli.ts"
+    "loops": "./bin/loops"
   },
   "scripts": {
     "loops": "bun src/cli.ts",

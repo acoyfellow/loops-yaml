@@ -5,11 +5,19 @@
   let query = '';
   let active: Category | 'all' = 'all';
 
-  // searchable haystack per recipe
-  const hay = (r: Recipe) =>
-    `${r.title} ${r.blurb} ${r.category} ${r.needs.join(' ')} ${r.run}`;
+  // Score the meaningful fields (title, category, tags, blurb) first; the raw
+  // command is searched too but discounted, so a stray subsequence buried in a
+  // long shell line can't falsely match or outrank a real title hit.
+  const scoreRecipe = (q: string, r: Recipe): number => {
+    if (!q.trim()) return 0;
+    const fields = `${r.title} ${r.category} ${r.needs.join(' ')} ${r.blurb}`;
+    const main = fuzzyScore(q, fields);
+    if (main !== -1) return main + 100; // real hit on a meaningful field
+    const cmd = fuzzyScore(q, r.run);
+    return cmd === -1 ? -1 : cmd; // command-only hit ranks below field hits
+  };
 
-  $: filtered = RECIPES.map(r => ({ r, s: fuzzyScore(query, hay(r)) }))
+  $: filtered = RECIPES.map(r => ({ r, s: scoreRecipe(query, r) }))
     .filter(({ r, s }) => (active === 'all' || r.category === active) && s !== -1)
     .sort((a, b) => b.s - a.s)
     .map(({ r }) => r);
