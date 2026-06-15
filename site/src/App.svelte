@@ -2,6 +2,8 @@
   import Fiber from './Fiber.svelte';
 
   const install = 'bun add -g github:acoyfellow/loops-yaml';
+  const piInstall = 'pi install git:github.com/acoyfellow/loops-yaml';
+  const piLoop = '/loop every 30s check MR !38955; stop when it merges';
   const yaml = `loops:
   review:
     schedule: "0 8 * * *"   # 8am daily; omit for on-demand
@@ -66,6 +68,24 @@
         It runs your command on a timer. That's the whole tool. Whatever the command does —
         hit an API, back up a database, call a model — is up to <em>you</em>. We don't get in the way.
       </p>
+    </section>
+
+    <section class="pi-card">
+      <div class="pi-copy">
+        <p class="kicker accent">Pi extension</p>
+        <h2 class="pi-title">Keep the agent checking.</h2>
+        <p class="pi-sub">
+          Run recurring prompts in your current Pi session. They wait until the agent is idle,
+          persist with the session, and stop when the agent reaches your terminal condition.
+        </p>
+      </div>
+      <div class="pi-code">
+        <span class="code-label">install</span>
+        <code>{piInstall}</code>
+        <span class="code-label">then</span>
+        <code>{piLoop}</code>
+        <span class="pi-meta">5s minimum · 24h expiry · 100-run safety cap</span>
+      </div>
     </section>
 
     <!-- funnel into recipes -->
@@ -190,6 +210,23 @@
   .prose { margin: 0; color: var(--ink-dim); max-width: 58ch; font-size: 1.05rem; }
   .prose em { color: var(--ink); font-style: normal; }
 
+  .pi-card {
+    display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 2.5rem;
+    margin: 3.5rem 0 1rem; padding: 2rem;
+    background: linear-gradient(135deg, #101f32 0%, #122844 100%);
+    border: 1px solid #263c57; border-radius: 16px;
+  }
+  .pi-title { margin: 0; color: var(--ink); font-size: 1.45rem; text-transform: none; letter-spacing: -0.02em; }
+  .pi-sub { margin: 0.7rem 0 0; color: var(--ink-dim); font-size: 0.95rem; }
+  .pi-code { display: flex; min-width: 0; flex-direction: column; gap: 0.45rem; }
+  .pi-code code {
+    display: block; overflow-x: auto; white-space: nowrap;
+    padding: 0.65rem 0.8rem; border: 1px solid var(--line); border-radius: 8px;
+    background: #0b1626; color: var(--ink); font: 12px/1.5 ui-monospace, monospace;
+  }
+  .code-label { color: var(--ink-faint); font: 600 0.65rem/1 ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.16em; }
+  .pi-meta { margin-top: 0.3rem; color: var(--ink-faint); font-size: 0.76rem; }
+
   .kicker.accent { color: var(--accent); }
   .funnel {
     display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
@@ -202,6 +239,7 @@
   .funnel-sub { margin: 0.5rem 0 0; color: var(--ink-dim); font-size: 0.95rem; max-width: 52ch; }
   .funnel-go { color: var(--accent); font-weight: 600; white-space: nowrap; font-size: 0.95rem; }
   @media (max-width: 600px) {
+    .pi-card { grid-template-columns: 1fr; gap: 1.5rem; padding: 1.4rem; }
     .funnel { flex-direction: column; align-items: flex-start; gap: 1rem; }
   }
 
