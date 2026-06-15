@@ -5,6 +5,7 @@
     "includes": [
       "src/**/*.ts",
       "test/**/*.ts",
+      "extensions/**/*.ts",
       "*.json",
       "*.jsonc",
       "!**/node_modules",

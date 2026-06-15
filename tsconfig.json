@@ -12,6 +12,6 @@
     "noEmit": true,
     "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts", "extensions/**/*.ts"],
   "exclude": ["node_modules", "site"]
 }

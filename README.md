@@ -19,6 +19,27 @@ loops logs review     # tail the last run
 
 `loops` has no opinion about what your command does. Read-only, receipts, models, tokens — all of that lives inside your command, not here.
 
+## Pi recurring prompts
+
+The included Pi extension runs session-scoped recurring prompts while Pi is open and idle:
+
+```text
+/loop every 30s check MR !38955; stop this loop once it merges
+/loop list
+/loop stop <id>
+/loop clear
+```
+
+The agent can create and stop the same loops with the `loops_task` tool. Tasks persist in the Pi session, default to a 24-hour expiry and 100-run cap, never overlap agent turns, and instruct the agent to delete the task when its terminal condition is met.
+
+Install directly from GitHub, then reload Pi:
+
+```bash
+pi install git:github.com/acoyfellow/loops-yaml
+```
+
+These prompt loops are intentionally session-scoped. The shell scheduler below remains the durable option for commands that should run after Pi exits.
+
 ## Install
 
 ```bash

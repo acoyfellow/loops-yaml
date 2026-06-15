@@ -3,9 +3,29 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Run commands on a cron schedule, or on demand. A loop is a schedule plus a command — nothing else.",
+  "description": "Run commands on a cron schedule, or on demand. Includes a Pi extension for recurring prompts.",
+  "keywords": [
+    "pi-package",
+    "scheduler",
+    "cron",
+    "automation"
+  ],
   "bin": {
     "loops": "./bin/loops"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./recurring": "./src/recurring.ts"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/pi/index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "0.79.4",
+    "@earendil-works/pi-coding-agent": "0.79.4",
+    "typebox": "1.2.11"
   },
   "scripts": {
     "loops": "bun src/cli.ts",
