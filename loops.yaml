@@ -6,7 +6,7 @@ loops:
     schedule: "*/5 * * * *"   # every 5 minutes
     run: echo "hello from the $LOOP_NAME loop at $(date)"
 
-  # review:
-  #   schedule: "0 8 * * *"   # 8am daily
-  #   run: ./scripts/review.sh
-  #   cwd: ../review-loop-lab
+  kylie-reviews:
+    schedule: "*/30 * * * *"   # bounded DM + tracked-MR pass every 30 minutes
+    run: ./scripts/kylie-review-loop.sh
+    cwd: ../review-loop-lab
