@@ -40,6 +40,24 @@ pi install git:github.com/acoyfellow/loops-yaml
 
 These prompt loops are intentionally session-scoped. The shell scheduler below remains the durable option for commands that should run after Pi exits.
 
+## OpenCode recurring prompts
+
+The same recurring-prompt model is available as an [OpenCode](https://opencode.ai) plugin. While OpenCode is open and the session is idle, each due loop is delivered as a follow-up prompt; the agent drives loops through the `loops_task` tool:
+
+```text
+every 30s check MR !38955; stop this loop once it merges
+```
+
+Point OpenCode at the plugin entry in `opencode.json`:
+
+```jsonc
+{
+  "plugin": ["/ABSOLUTE/PATH/TO/loops-yaml/extensions/opencode/index.ts"]
+}
+```
+
+See [docs/opencode.md](docs/opencode.md) for install options, the `loops_task` actions, and how delivery works. Tasks persist under `~/.loops-opencode/` and default to a 24-hour expiry and 100-run cap.
+
 ## Install
 
 ```bash
@@ -62,6 +80,7 @@ Requires [Bun](https://bun.sh).
 - [Schedule, run on demand, and keep loops alive](docs/how-to.md)
 - [loops.yaml fields and CLI commands](docs/reference.md)
 - [Why a loop is only a schedule and a command](docs/design.md)
+- [OpenCode recurring prompts](docs/opencode.md)
 
 ## What it does
 

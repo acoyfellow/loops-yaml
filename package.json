@@ -3,9 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Run commands on a cron schedule, or on demand. Includes a Pi extension for recurring prompts.",
+  "description": "Run commands on a cron schedule, or on demand. Includes Pi and OpenCode extensions for recurring prompts.",
   "keywords": [
     "pi-package",
+    "opencode-plugin",
     "scheduler",
     "cron",
     "automation"
@@ -15,7 +16,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./recurring": "./src/recurring.ts"
+    "./recurring": "./src/recurring.ts",
+    "./opencode": "./extensions/opencode/index.ts"
   },
   "pi": {
     "extensions": [
@@ -25,7 +27,14 @@
   "peerDependencies": {
     "@earendil-works/pi-ai": "0.79.4",
     "@earendil-works/pi-coding-agent": "0.79.4",
+    "@opencode-ai/plugin": ">=1.4.0",
     "typebox": "1.2.11"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": { "optional": true },
+    "@earendil-works/pi-coding-agent": { "optional": true },
+    "@opencode-ai/plugin": { "optional": true },
+    "typebox": { "optional": true }
   },
   "scripts": {
     "loops": "bun src/cli.ts",
@@ -36,7 +45,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
+    "@opencode-ai/plugin": "1.4.6",
     "@types/bun": "latest",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zod": "^4.4.3"
   }
 }
