@@ -26,11 +26,12 @@ The included Pi extension runs session-scoped recurring prompts while Pi is open
 ```text
 /loop every 30s check MR !38955; stop this loop once it merges
 /loop list
+/loop edit <id> every 5m check MR !38955 and report blockers
 /loop stop <id>
 /loop clear
 ```
 
-The agent can create and stop the same loops with the `loops_task` tool. Tasks persist in the Pi session, default to a 24-hour expiry and 100-run cap, never overlap agent turns, and instruct the agent to delete the task when its terminal condition is met.
+The agent can create, edit, and stop the same loops with the `loops_task` tool. Editing changes the interval, prompt, limits, or expiry in place without stopping and recreating the loop. Tasks persist in the Pi session, default to a 24-hour expiry and 100-run cap, never overlap agent turns, and instruct the agent to delete the task when its terminal condition is met.
 
 Install directly from GitHub, then reload Pi:
 
