@@ -1,258 +1,382 @@
 <script lang="ts">
   import Fiber from './Fiber.svelte';
 
-  const install = 'bun add -g github:acoyfellow/loops-yaml';
+  const shellInstall = 'bun add -g github:acoyfellow/loops-yaml';
   const piInstall = 'pi install git:github.com/acoyfellow/loops-yaml';
   const piLoop = '/loop every 30s check MR !38955; stop when it merges';
+  const opencodeInstall =
+    '{ "plugin": ["/ABSOLUTE/PATH/TO/loops-yaml/extensions/opencode/index.ts"] }';
+  const opencodeLoop = 'every 30s check MR !38955; stop when it merges';
   const yaml = `loops:
   review:
-    schedule: "0 8 * * *"   # 8am daily; omit for on-demand
+    schedule: "0 8 * * *"   # omit for on-demand only
     run: ./scripts/review.sh`;
 
   const commands: Array<[string, string]> = [
-    ['loops list', 'every loop and its last run'],
-    ['loops run review', 'run one now'],
-    ['loops watch', 'run scheduled loops forever'],
-    ['loops logs review', 'tail the last run'],
+    ['loops list', 'see every loop and its latest run'],
+    ['loops run review', 'run one command now'],
+    ['loops watch', 'keep scheduled commands running'],
+    ['loops logs review', 'read the latest output'],
   ];
+
+  let copied = '';
+  const copy = async (label: string, value: string) => {
+    await navigator.clipboard.writeText(value);
+    copied = label;
+    window.setTimeout(() => {
+      if (copied === label) copied = '';
+    }, 1600);
+  };
 </script>
 
+<svelte:head>
+  <meta name="theme-color" content="#0b1626" />
+</svelte:head>
+
 <div class="page">
-  <!-- full-bleed hero band so the fiber spans the whole viewport width -->
-  <section class="hero">
-    <div class="wash" aria-hidden="true"></div>
-    <Fiber />
-    <div class="wrap hero-wrap">
-      <header class="head">
-        <div class="brand">
-          <span class="mark" aria-hidden="true"></span>
-          <span class="wordmark">loops<span class="ext">.yaml</span></span>
-        </div>
-        <nav class="nav">
-          <a class="navlink" href="/recipes">Recipes</a>
-          <a class="ghlink" href="https://github.com/acoyfellow/loops-yaml">GitHub ↗</a>
-        </nav>
-      </header>
-
-      <div class="hero-copy">
-        <h1>A loop is a schedule<br />plus a command.</h1>
-        <p class="lede">Run commands on a cron schedule, or on demand. Nothing else to learn.</p>
-        <div class="cta"><code>{install}</code></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- one continuous painted color field spans BOTH sections; the cream→slate
-       transition lives inside the image, so there is no seam or gap. -->
-  <section class="canvas" style="background-image:url('/art/field-cream-blue-v2.jpg')">
-    <div class="wrap canvas-inner">
-      <div class="on-cream">
-        <p class="kicker dark">define</p>
-        <pre class="code">{yaml}</pre>
-      </div>
-      <div class="on-slate">
-        <p class="kicker slate">run</p>
-        <ul class="cmds">
-          {#each commands as [cmd, what]}
-            <li><code>{cmd}</code><span class="what">{what}</span></li>
-          {/each}
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <section class="scope">
-      <p class="kicker">scope</p>
-      <p class="prose">
-        It runs your command on a timer. That's the whole tool. Whatever the command does —
-        hit an API, back up a database, call a model — is up to <em>you</em>. We don't get in the way.
-      </p>
-    </section>
-
-    <section class="pi-card">
-      <div class="pi-copy">
-        <p class="kicker accent">Pi extension</p>
-        <h2 class="pi-title">Keep the agent checking.</h2>
-        <p class="pi-sub">
-          Run recurring prompts in your current Pi session. They wait until the agent is idle,
-          persist with the session, and stop when the agent reaches your terminal condition.
-        </p>
-      </div>
-      <div class="pi-code">
-        <span class="code-label">install</span>
-        <code>{piInstall}</code>
-        <span class="code-label">then</span>
-        <code>{piLoop}</code>
-        <span class="pi-meta">5s minimum · 24h expiry · 100-run safety cap</span>
-      </div>
-    </section>
-
-    <!-- funnel into recipes -->
-    <a class="funnel" href="/recipes">
-      <div class="funnel-copy">
-        <p class="kicker accent">recipes</p>
-        <p class="funnel-h">The command is where the leverage is.</p>
-        <p class="funnel-sub">
-          A VPS, a coding agent, and a Cloudflare token go a long way. Browse small,
-          real loops — backups, health checks, dynamic DNS, watchers — and copy one in.
-        </p>
-      </div>
-      <span class="funnel-go">See the recipes →</span>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="loops.yaml home">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="wordmark">loops<span class="ext">.yaml</span></span>
     </a>
+    <nav aria-label="Primary navigation">
+      <a href="#how">How it works</a>
+      <a href="/recipes">Recipes</a>
+      <a class="source-link" href="https://github.com/acoyfellow/loops-yaml">Source <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
 
-    <footer class="foot">
-      <span>MIT</span>
-      <a href="https://github.com/acoyfellow/loops-yaml">acoyfellow/loops-yaml</a>
-    </footer>
-  </div>
+  <main>
+    <section class="hero">
+      <div class="wash" aria-hidden="true"></div>
+      <Fiber />
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <p class="status"><i></i> Live demo deployment</p>
+          <h1>Run it now.<br /><em>Run it again later.</em></h1>
+          <p class="lede">
+            loops.yaml is a small scheduler for shell commands and recurring Pi or OpenCode prompts.
+            Define one loop, run it on demand, or leave it watching on a schedule.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#try">Try it now <span aria-hidden="true">↓</span></a>
+            <a class="button secondary" href="https://github.com/acoyfellow/loops-yaml">Get the source <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <div class="hero-meta" aria-label="Project details">
+          <span><b>Runtime</b>Bun + Pi / OpenCode</span>
+          <span><b>License</b>MIT</span>
+          <span><b>Hosted on</b>Cloudflare Workers</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-note">
+      <div class="wrap note-inner">
+        <span class="mono-label">About this deployment</span>
+        <p>
+          This is the project’s public demo deployment and documentation. The scheduler itself
+          runs wherever you install it; the complete implementation is in the source repository.
+        </p>
+        <a href="https://github.com/acoyfellow/loops-yaml">Browse the repository ↗</a>
+      </div>
+    </section>
+
+    <section class="chapter wrap" id="how">
+      <div class="chapter-head">
+        <div>
+          <p class="eyebrow">01 / What it is</p>
+          <h2>One loop.<br />Two execution modes.</h2>
+        </div>
+        <p>
+          The same idea works for unattended commands and active agent sessions: say what should
+          happen, say when, and keep the execution visible.
+        </p>
+      </div>
+      <div class="mode-grid">
+        <article>
+          <span class="index">01</span>
+          <p class="mode-label">Shell scheduler</p>
+          <h3>Commands that run again.</h3>
+          <p>Use a short YAML file for backups, health checks, deploys, and any command with an exit code.</p>
+          <code>loops watch</code>
+        </article>
+        <article>
+          <span class="index">02</span>
+          <p class="mode-label">Agent extension</p>
+          <h3>Recurring prompts while your agent is open.</h3>
+          <p>Set an interval and a stop condition in Pi or OpenCode. The agent waits for idle time before it starts the next check.</p>
+          <code>/loop every 30s …</code>
+        </article>
+        <article>
+          <span class="index">03</span>
+          <p class="mode-label">Run record</p>
+          <h3>Logs and status stay visible.</h3>
+          <p>Every shell run writes a timestamped log and latest status. Pi loops remain attached to their session.</p>
+          <code>loops logs review</code>
+        </article>
+      </div>
+    </section>
+
+    <section class="canvas" style="background-image:url('/art/field-cream-blue-v2.jpg')">
+      <div class="wrap canvas-inner">
+        <div class="on-cream">
+          <p class="eyebrow dark">02 / Define</p>
+          <h2 class="field-title">Define the schedule in one readable file.</h2>
+          <pre class="code">{yaml}</pre>
+        </div>
+        <div class="on-slate">
+          <p class="eyebrow slate">03 / Run</p>
+          <ul class="cmds">
+            {#each commands as [cmd, what]}
+              <li><code>{cmd}</code><span>{what}</span></li>
+            {/each}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter try wrap" id="try">
+      <div class="chapter-head">
+        <div>
+          <p class="eyebrow">04 / Try it now</p>
+          <h2>Choose how you’ll run it.</h2>
+        </div>
+        <p>Install from the public repository. It runs on your machine or in your Pi or OpenCode session; no hosted account is required.</p>
+      </div>
+
+      <div class="install-grid">
+        <article class="install-card">
+          <div class="card-head"><span class="mode-label">Shell commands</span><span class="availability">Bun required</span></div>
+          <h3>Schedule a command.</h3>
+          <p>Install the CLI, add a <code>loops.yaml</code>, then run it once or keep the watcher open.</p>
+          <div class="copy-row">
+            <code>{shellInstall}</code>
+            <button on:click={() => copy('shell', shellInstall)} aria-label="Copy shell install command">{copied === 'shell' ? 'Copied' : 'Copy'}</button>
+          </div>
+          <a href="https://github.com/acoyfellow/loops-yaml#install">Shell quickstart ↗</a>
+        </article>
+
+        <article class="install-card pi-card">
+          <div class="card-head"><span class="mode-label orange">Pi recurring prompts</span><span class="availability">Session scoped</span></div>
+          <h3>Keep the agent checking.</h3>
+          <p>Install the Pi package, reload the session, then describe the interval and the condition that ends the loop.</p>
+          <div class="copy-row">
+            <code>{piInstall}</code>
+            <button on:click={() => copy('pi-install', piInstall)} aria-label="Copy Pi install command">{copied === 'pi-install' ? 'Copied' : 'Copy'}</button>
+          </div>
+          <div class="copy-row subdued">
+            <code>{piLoop}</code>
+            <button on:click={() => copy('pi-loop', piLoop)} aria-label="Copy Pi loop example">{copied === 'pi-loop' ? 'Copied' : 'Copy'}</button>
+          </div>
+          <p class="fine-print">5-second minimum · idle-only execution · 24-hour expiry · 100-run safety cap</p>
+        </article>
+
+        <article class="install-card oc-card">
+          <div class="card-head"><span class="mode-label">OpenCode recurring prompts</span><span class="availability">Session scoped</span></div>
+          <h3>Same loops, in OpenCode.</h3>
+          <p>Point OpenCode at the plugin in <code>opencode.json</code>, restart, then describe the interval and the condition that ends the loop.</p>
+          <div class="copy-row">
+            <code>{opencodeInstall}</code>
+            <button on:click={() => copy('oc-install', opencodeInstall)} aria-label="Copy OpenCode plugin config">{copied === 'oc-install' ? 'Copied' : 'Copy'}</button>
+          </div>
+          <div class="copy-row subdued">
+            <code>{opencodeLoop}</code>
+            <button on:click={() => copy('oc-loop', opencodeLoop)} aria-label="Copy OpenCode loop example">{copied === 'oc-loop' ? 'Copied' : 'Copy'}</button>
+          </div>
+          <a href="https://github.com/acoyfellow/loops-yaml/blob/main/docs/opencode.md">OpenCode setup ↗</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="principles wrap" aria-label="Project principles">
+      <article><span>Small surface</span><strong>Four CLI commands.</strong><p>Enough interface to run, watch, list, and inspect.</p></article>
+      <article><span>Plain state</span><strong>State stays in files.</strong><p>YAML definitions, timestamped logs, and JSON run state.</p></article>
+      <article><span>Visible boundary</span><strong>Process-level access.</strong><p>Each loop uses the permissions of the process that starts it.</p></article>
+    </section>
+
+    <section class="source-cta wrap">
+      <div>
+        <p class="eyebrow orange">Source available</p>
+        <h2>The complete project<br />is in the repository.</h2>
+        <p>Review the implementation, tests, reference documentation, Pi and OpenCode extensions, and website source.</p>
+      </div>
+      <div class="source-actions">
+        <a class="button primary" href="https://github.com/acoyfellow/loops-yaml">Open the source <span aria-hidden="true">↗</span></a>
+        <a class="text-link" href="/recipes">Browse working recipes →</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    <span>loops.yaml · MIT</span>
+    <span>Demo deployed on Cloudflare Workers</span>
+    <a href="https://github.com/acoyfellow/loops-yaml">GitHub ↗</a>
+  </footer>
 </div>
 
 <style>
   :global(:root) {
     --bg: #0b1626;
-    --line: #1e2c40;
-    --ink: #eef1f5;
-    --ink-dim: #97a3b6;
-    --ink-faint: #5d6b80;
+    --bg-deep: #07111e;
+    --layer: #0f1f33;
+    --layer-2: #132942;
+    --line: #24364d;
+    --line-strong: #38516e;
+    --ink: #f1f4f7;
+    --ink-dim: #a6b1c0;
+    --ink-faint: #68778d;
     --accent: #f6821f;
+    --blue: #9ccfe2;
+    --radius: 14px;
   }
+  :global(html) { scroll-behavior: smooth; }
   :global(html, body) { max-width: 100%; overflow-x: hidden; }
   :global(body) {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  *, *::before, *::after { box-sizing: border-box; }
+  :global(*) { box-sizing: border-box; }
+  .page { min-height: 100vh; }
+  .wrap { width: min(100% - 3rem, 1040px); margin-inline: auto; }
 
-  .page { width: 100%; overflow-x: clip; }
-  .wrap { max-width: 880px; margin: 0 auto; padding: 0 1.5rem; }
-
-  .head {
+  .topbar {
+    position: sticky; top: 0; z-index: 20; height: 60px;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 1.8rem 0;
+    padding: 0 max(1.5rem, calc((100vw - 1040px) / 2));
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+    background: color-mix(in srgb, var(--bg-deep) 88%, transparent);
+    backdrop-filter: blur(18px);
   }
-  .brand { display: flex; align-items: center; gap: 0.6rem; }
-  .mark {
-    width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid var(--accent);
-    box-shadow: inset 0 0 0 2px var(--bg), 0 0 10px -2px var(--accent);
-  }
-  .wordmark { font-weight: 600; letter-spacing: -0.01em; }
-  .ext { color: var(--ink-faint); font-weight: 400; }
-  .nav { display: flex; align-items: center; gap: 1.4rem; }
-  .navlink { color: var(--ink-dim); text-decoration: none; font-size: 0.9rem; }
-  .navlink:hover { color: var(--ink); }
-  .ghlink { color: var(--ink-dim); text-decoration: none; font-size: 0.9rem; }
-  .ghlink:hover { color: var(--ink); }
+  .brand { display: flex; align-items: center; gap: 0.65rem; color: var(--ink); text-decoration: none; }
+  .mark { width: 13px; height: 13px; border: 2px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 4px rgba(246,130,31,.1); }
+  .wordmark { font-weight: 650; letter-spacing: -0.02em; }
+  .ext { color: var(--ink-faint); font-weight: 450; }
+  .topbar nav { display: flex; align-items: center; gap: 1.5rem; }
+  .topbar nav a { color: var(--ink-dim); text-decoration: none; font: 600 0.7rem/1 ui-monospace, monospace; }
+  .topbar nav a:hover { color: var(--ink); }
+  .source-link { padding: 0.55rem 0.75rem; border: 1px solid var(--line); border-radius: 7px; }
 
-  /* hero — full-bleed band; fiber + wash span the viewport, copy stays in .wrap */
-  .hero { position: relative; overflow: hidden; padding-bottom: 1rem; }
-  .hero-wrap { position: relative; z-index: 1; padding-top: 0; padding-bottom: 5rem; }
-  .wash {
-    position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: min(60%, 720px);
-    background: radial-gradient(120% 90% at 80% 40%, #1d3a5c 0%, rgba(29, 58, 92, 0) 70%);
-    filter: blur(8px);
-    opacity: 0.8;
-    pointer-events: none;
-  }
-  .hero-copy { position: relative; z-index: 1; padding: 4rem 0 1rem; }
-  h1 {
-    font-size: clamp(2.1rem, 6vw, 3.6rem);
-    line-height: 1.04; letter-spacing: -0.04em; margin: 0; font-weight: 600;
-  }
-  .lede { color: var(--ink-dim); font-size: 1.1rem; margin: 1.2rem 0 2rem; max-width: 32ch; }
-  .cta code {
-    display: inline-block; background: #0f1f33; border: 1px solid var(--line);
-    border-radius: 10px; padding: 0.7rem 1rem;
-    font: 13px ui-monospace, 'Cascadia Code', monospace; color: var(--ink);
-    max-width: 100%; overflow-x: auto; white-space: nowrap;
-  }
-  .cta code::before { content: '$ '; color: var(--accent); }
+  .hero { position: relative; min-height: 650px; overflow: hidden; isolation: isolate; border-bottom: 1px solid var(--line); }
+  .hero :global(svg) { opacity: 0.8; }
+  .wash { position: absolute; inset: 0 0 0 42%; z-index: -2; background: radial-gradient(circle at 70% 42%, #214d73, transparent 65%); opacity: .8; }
+  .hero-grid { position: absolute; inset: 0; z-index: -1; background-image: linear-gradient(rgba(156,207,226,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(156,207,226,.06) 1px, transparent 1px); background-size: 64px 64px; mask-image: linear-gradient(90deg, #000, transparent 78%); }
+  .hero-inner { position: relative; min-height: 650px; display: flex; align-items: flex-end; padding-block: 5rem 3rem; }
+  .hero-copy { max-width: 670px; }
+  .status { display: inline-flex; align-items: center; gap: .55rem; margin: 0; padding: .45rem .65rem; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-dim); background: rgba(7,17,30,.55); font: 600 .66rem/1 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .06em; }
+  .status i { width: 7px; height: 7px; border-radius: 50%; background: #48c78e; box-shadow: 0 0 0 4px rgba(72,199,142,.12); }
+  h1 { margin: 1.1rem 0 1rem; font-size: clamp(2.8rem, 7vw, 5.1rem); line-height: .98; letter-spacing: -.06em; font-weight: 720; }
+  h1 em { color: var(--blue); font-style: normal; font-weight: 520; }
+  .lede { max-width: 55ch; margin: 0; color: var(--ink-dim); font-size: clamp(1rem, 1.8vw, 1.15rem); line-height: 1.7; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 2rem; }
+  .button { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; min-height: 43px; padding: 0 1rem; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; font: 650 .78rem/1 ui-monospace, monospace; transition: transform .15s, border-color .15s, background .15s; }
+  .button:hover { transform: translateY(-1px); }
+  .button.primary { border-color: var(--accent); background: var(--accent); color: #281000; }
+  .button.secondary { background: rgba(15,31,51,.72); }
+  .button.secondary:hover { border-color: var(--line-strong); }
+  .hero-meta { position: absolute; right: 0; bottom: 3.1rem; display: grid; grid-template-columns: repeat(3, auto); gap: 1.5rem; }
+  .hero-meta span { display: grid; gap: .25rem; color: var(--ink-dim); font: 500 .64rem/1.35 ui-monospace, monospace; }
+  .hero-meta b { color: var(--ink-faint); font-size: .54rem; text-transform: uppercase; letter-spacing: .08em; }
 
-  /* one painted color field behind both sections — no seam, no gap */
-  .canvas {
-    background-size: 100% 100%;
-    background-repeat: no-repeat;
-  }
-  .canvas-inner { display: grid; }
-  /* keep text clear of the torn deckle: cream content ends well above the tear,
-     slate content starts well below it */
-  .canvas-inner { min-height: 600px; }
-  .on-cream { padding: 3.4rem 0 7rem; color: #1a2740; }
-  .on-slate { padding: 5.5rem 0 4rem; color: #11203a; }
-  .kicker.slate { color: #3a4a63; }
+  .demo-note { border-bottom: 1px solid var(--line); background: var(--bg-deep); }
+  .note-inner { display: grid; grid-template-columns: 11rem 1fr auto; gap: 2rem; align-items: center; min-height: 92px; }
+  .mono-label, .eyebrow, .mode-label, .availability { font: 600 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
+  .mono-label { color: var(--accent); }
+  .note-inner p { margin: 0; color: var(--ink-dim); font-size: .82rem; }
+  .note-inner a { color: var(--blue); text-decoration: none; font: 600 .7rem/1 ui-monospace, monospace; white-space: nowrap; }
 
-  .kicker {
-    margin: 0 0 1rem;
-    font: 600 0.72rem/1 ui-monospace, monospace;
-    text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-faint);
-  }
-  .kicker.dark { color: #6a6256; }
-  .code {
-    margin: 0; overflow-x: auto;
-    font: 13.5px/1.7 ui-monospace, 'Cascadia Code', monospace; color: #243049;
-  }
-  .cmds { list-style: none; margin: 0; padding: 0; }
-  .cmds li {
-    display: flex; gap: 1.2rem; align-items: baseline;
-    padding: 0.55rem 0; border-bottom: 1px solid rgba(11, 22, 38, 0.16);
-  }
-  .cmds li:last-child { border-bottom: 0; }
-  .cmds code { color: #0b1626; font: 600 13px ui-monospace, monospace; min-width: 11rem; }
-  .what { color: #243049; opacity: 0.8; }
+  .chapter { padding-block: clamp(4.5rem, 9vw, 7rem); }
+  .chapter-head { display: grid; grid-template-columns: 1.05fr .95fr; gap: 5rem; align-items: end; }
+  .eyebrow { margin: 0 0 1rem; color: var(--ink-faint); }
+  .eyebrow.orange, .mode-label.orange { color: var(--accent); }
+  .chapter h2, .source-cta h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.02; letter-spacing: -.05em; }
+  .chapter-head > p { margin: 0; color: var(--ink-dim); line-height: 1.75; }
+  .mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 3.5rem; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--line); }
+  .mode-grid article { display: flex; min-height: 310px; flex-direction: column; padding: 1.6rem; background: var(--layer); }
+  .index { color: var(--accent); font: 650 .65rem/1 ui-monospace, monospace; }
+  .mode-label { margin: 3.6rem 0 .75rem; color: var(--blue); }
+  .mode-grid h3, .install-card h3 { margin: 0; font-size: 1.25rem; letter-spacing: -.03em; }
+  .mode-grid p, .install-card > p { color: var(--ink-dim); font-size: .85rem; }
+  .mode-grid code { margin-top: auto; color: var(--ink); font: 12px ui-monospace, monospace; }
 
-  .scope { padding: 3.5rem 0 1rem; }
-  .prose { margin: 0; color: var(--ink-dim); max-width: 58ch; font-size: 1.05rem; }
-  .prose em { color: var(--ink); font-style: normal; }
+  .canvas { background-size: 100% 100%; background-repeat: no-repeat; }
+  .canvas-inner { min-height: 690px; }
+  .on-cream { padding: 4.5rem 0 8rem; color: #17253b; }
+  .on-slate { padding: 5.8rem 0 4.5rem; color: #14233a; }
+  .eyebrow.dark { color: #71685b; }
+  .eyebrow.slate { color: #45556c; }
+  .field-title { max-width: 14ch; margin: 0 0 2rem; font-size: clamp(1.65rem, 3vw, 2.5rem); line-height: 1.08; letter-spacing: -.04em; }
+  .code { margin: 0; color: #243049; font: 13.5px/1.75 ui-monospace, monospace; }
+  .cmds { margin: 0; padding: 0; list-style: none; }
+  .cmds li { display: grid; grid-template-columns: 12rem 1fr; gap: 1.5rem; padding: .75rem 0; border-bottom: 1px solid rgba(11,22,38,.15); }
+  .cmds code { color: #0b1626; font: 650 13px ui-monospace, monospace; }
+  .cmds span { color: #2f4058; }
 
-  .pi-card {
-    display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 2.5rem;
-    margin: 3.5rem 0 1rem; padding: 2rem;
-    background: linear-gradient(135deg, #101f32 0%, #122844 100%);
-    border: 1px solid #263c57; border-radius: 16px;
-  }
-  .pi-title { margin: 0; color: var(--ink); font-size: 1.45rem; text-transform: none; letter-spacing: -0.02em; }
-  .pi-sub { margin: 0.7rem 0 0; color: var(--ink-dim); font-size: 0.95rem; }
-  .pi-code { display: flex; min-width: 0; flex-direction: column; gap: 0.45rem; }
-  .pi-code code {
-    display: block; overflow-x: auto; white-space: nowrap;
-    padding: 0.65rem 0.8rem; border: 1px solid var(--line); border-radius: 8px;
-    background: #0b1626; color: var(--ink); font: 12px/1.5 ui-monospace, monospace;
-  }
-  .code-label { color: var(--ink-faint); font: 600 0.65rem/1 ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.16em; }
-  .pi-meta { margin-top: 0.3rem; color: var(--ink-faint); font-size: 0.76rem; }
+  .try { border-bottom: 1px solid var(--line); }
+  .install-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 3.5rem; }
+  .install-card { padding: 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--layer); }
+  .pi-card { background: linear-gradient(135deg, var(--layer), var(--layer-2)); border-color: #305174; }
+  .oc-card { background: linear-gradient(135deg, var(--layer), var(--layer-2)); border-color: #305174; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2.8rem; }
+  .mode-label { margin: 0; color: var(--blue); }
+  .availability { color: var(--ink-faint); font-size: .55rem; }
+  .install-card > p { min-height: 3.2rem; }
+  .copy-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin-top: 1rem; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-deep); }
+  .copy-row.subdued { margin-top: .55rem; }
+  .copy-row code { min-width: 0; overflow-x: auto; padding: .75rem; color: var(--ink); font: 11.5px/1.4 ui-monospace, monospace; white-space: nowrap; }
+  .copy-row button { border: 0; border-left: 1px solid var(--line); padding: 0 .8rem; background: transparent; color: var(--ink-dim); cursor: pointer; font: 600 .62rem ui-monospace, monospace; }
+  .copy-row button:hover { color: var(--ink); background: var(--layer); }
+  .install-card > a { display: inline-block; margin-top: 1rem; color: var(--blue); text-decoration: none; font: 600 .7rem ui-monospace, monospace; }
+  .fine-print { min-height: 0 !important; margin: 1rem 0 0; color: var(--ink-faint) !important; font: .65rem ui-monospace, monospace; }
 
-  .kicker.accent { color: var(--accent); }
-  .funnel {
-    display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
-    margin: 3.5rem 0 1rem; padding: 1.8rem 1.9rem;
-    background: #0f1f33; border: 1px solid var(--line); border-radius: 16px;
-    text-decoration: none; color: var(--ink); transition: border-color 0.15s, transform 0.15s;
-  }
-  .funnel:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .funnel-h { margin: 0.5rem 0 0; font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; }
-  .funnel-sub { margin: 0.5rem 0 0; color: var(--ink-dim); font-size: 0.95rem; max-width: 52ch; }
-  .funnel-go { color: var(--accent); font-weight: 600; white-space: nowrap; font-size: 0.95rem; }
-  @media (max-width: 600px) {
-    .pi-card { grid-template-columns: 1fr; gap: 1.5rem; padding: 1.4rem; }
-    .funnel { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1rem; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--line); }
+  .principles article { padding: 1.4rem; background: var(--bg-deep); }
+  .principles span { color: var(--accent); font: 600 .6rem ui-monospace, monospace; text-transform: uppercase; }
+  .principles strong { display: block; margin-top: 2.5rem; font-size: 1rem; }
+  .principles p { margin: .45rem 0 0; color: var(--ink-dim); font-size: .75rem; }
+
+  .source-cta { display: grid; grid-template-columns: 1fr auto; gap: 3rem; align-items: end; margin-top: 5rem; padding-block: 3rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .source-cta h2 { font-size: clamp(1.8rem, 3.7vw, 2.8rem); }
+  .source-cta p:not(.eyebrow) { max-width: 54ch; margin: 1rem 0 0; color: var(--ink-dim); }
+  .source-actions { display: grid; justify-items: start; gap: 1rem; }
+  .text-link { color: var(--blue); text-decoration: none; font: 600 .7rem ui-monospace, monospace; }
+
+  .footer { display: flex; justify-content: space-between; gap: 1rem; padding-block: 2rem 4rem; color: var(--ink-faint); font: 500 .62rem ui-monospace, monospace; }
+  .footer a { color: var(--ink-dim); text-decoration: none; }
+
+  @media (max-width: 820px) {
+    .topbar { padding-inline: 1rem; }
+    .topbar nav a:first-child { display: none; }
+    .hero { min-height: 610px; }
+    .hero-inner { min-height: 610px; padding-bottom: 7rem; }
+    .hero-meta { left: 0; right: auto; bottom: 2.2rem; }
+    .note-inner { grid-template-columns: 1fr; gap: .5rem; padding-block: 1.2rem; }
+    .chapter-head, .install-grid, .source-cta { grid-template-columns: 1fr; gap: 1.5rem; }
+    .mode-grid, .principles { grid-template-columns: 1fr; }
+    .mode-grid article { min-height: 240px; }
+    .mode-label { margin-top: 2.5rem; }
+    .source-actions { margin-top: .5rem; }
   }
 
-  .foot {
-    display: flex; justify-content: space-between;
-    padding: 2.5rem 0 4rem; color: var(--ink-faint); font-size: 0.85rem;
-  }
-  .foot a { color: var(--ink-faint); text-decoration: none; }
-  .foot a:hover { color: var(--ink-dim); }
-
-  @media (max-width: 720px) {
-    .hero { padding: 3rem 0 3.5rem; }
-    .wash { width: 70%; opacity: 0.45; }
-    .cmds code { min-width: 9rem; }
+  @media (max-width: 560px) {
+    .wrap { width: min(100% - 2rem, 1040px); }
+    .topbar nav { gap: .8rem; }
+    .topbar nav > a:not(.source-link) { display: none; }
+    .hero { min-height: 650px; }
+    .hero-inner { min-height: 650px; padding-top: 4rem; }
+    h1 { font-size: 3rem; }
+    .hero-meta { grid-template-columns: 1fr 1fr; gap: .8rem 1.5rem; }
+    .hero-meta span:last-child { display: none; }
+    .hero-actions { align-items: stretch; flex-direction: column; }
+    .chapter { padding-block: 4rem; }
+    .canvas-inner { min-height: 720px; }
+    .on-cream { padding-top: 3.5rem; }
+    .cmds li { grid-template-columns: 1fr; gap: .2rem; }
+    .card-head { align-items: flex-start; flex-direction: column; gap: .5rem; }
+    .copy-row { grid-template-columns: minmax(0, 1fr); }
+    .copy-row button { min-height: 36px; border-left: 0; border-top: 1px solid var(--line); }
+    .footer { flex-direction: column; }
   }
 </style>
