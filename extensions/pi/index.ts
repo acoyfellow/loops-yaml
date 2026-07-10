@@ -13,6 +13,8 @@ import {
   parseInterval,
   parseLoopCommand,
   type RecurringTask,
+  shouldCompactBeforeTick,
+  validateCompactThreshold,
 } from '../../src/recurring';
 
 const STATE_TYPE = 'loops-yaml-pi-state';
@@ -38,6 +40,7 @@ interface ToolInput {
   id?: string;
   maxRuns?: number;
   expiresIn?: string;
+  compactThreshold?: number;
 }
 
 function taskId(): string {
@@ -101,6 +104,23 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     const due = [...tasks.values()].find((task) => now >= task.nextRunAt);
     if (!due) return;
 
+    // Guard against monotonic context growth: a long-lived loop injects a fresh
+    // prompt every interval into the SAME session, so context climbs until the
+    // model's output-token budget underflows and the gateway rejects the
+    // request. If we're near the window, compact now and let the task fire again
+    // next interval against a compacted context instead of injecting on top of a
+    // nearly-full window. markTaskRun already advanced nextRunAt, so skipping
+    // here costs one interval, not the task.
+    if (shouldCompactBeforeTick(ctx.getContextUsage(), due.compactThreshold)) {
+      // Reschedule (do NOT count as a run) before compacting, so the 1s check
+      // timer doesn't re-enter compact() every second while it runs.
+      tasks.set(due.id, { ...due, nextRunAt: now + due.everyMs });
+      persist();
+      ctx.compact();
+      ctxRef?.ui.notify('Loop compacted context before next tick (near context window).', 'info');
+      return;
+    }
+
     const updated = markTaskRun(due, now);
     tasks.set(updated.id, updated);
     persist();
@@ -121,6 +141,7 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     prompt: string;
     maxRuns?: number;
     expiresIn?: string;
+    compactThreshold?: number;
   }): RecurringTask => {
     const schedule = parseInterval(input.interval);
     const now = Date.now();
@@ -134,6 +155,10 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
       runs: 0,
       maxRuns: input.maxRuns ?? DEFAULT_MAX_RUNS,
       expiresAt: now + expiresAfter,
+      compactThreshold:
+        input.compactThreshold === undefined
+          ? undefined
+          : validateCompactThreshold(input.compactThreshold),
     };
     if (!task.prompt) throw new Error('prompt is required');
     if (!Number.isInteger(task.maxRuns) || task.maxRuns! < 1 || task.maxRuns! > 10_000) {
@@ -224,6 +249,7 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     promptGuidelines: [
       'Use loops_task when the user asks to check or repeat work on an interval.',
       'Delete a loops_task as soon as its terminal condition is satisfied.',
+      'Loops auto-compact the session before a tick at 80% context usage; set compactThreshold (0-1) to tune long-running loops.',
     ],
     parameters: Type.Object({
       action: StringEnum(['create', 'list', 'delete', 'clear'] as const),
@@ -242,6 +268,12 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
       ),
       expiresIn: Type.Optional(
         Type.String({ description: 'For create: expiry duration; defaults to 1d' }),
+      ),
+      compactThreshold: Type.Optional(
+        Type.Number({
+          description:
+            'For create: compact the session before a tick once context usage reaches this fraction of the window (0-1 exclusive); defaults to 0.8',
+        }),
       ),
     }),
     async execute(_toolCallId, rawInput): Promise<AgentToolResult<ToolDetails>> {
@@ -274,7 +306,7 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
         throw new Error('interval and prompt are required for create');
       const task = createTask(
         input as Required<Pick<ToolInput, 'interval' | 'prompt'>> &
-          Pick<ToolInput, 'maxRuns' | 'expiresIn'>,
+          Pick<ToolInput, 'maxRuns' | 'expiresIn' | 'compactThreshold'>,
       );
       return {
         content: [{ type: 'text', text: `Created ${taskLine(task)}.` }],

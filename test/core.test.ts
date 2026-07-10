@@ -7,6 +7,8 @@ import {
   parseInterval,
   parseLoopCommand,
   type RecurringTask,
+  shouldCompactBeforeTick,
+  validateCompactThreshold,
 } from '../src/recurring';
 
 const at = (s: string) => new Date(s);
@@ -107,5 +109,59 @@ loops:
     run: echo hi
 `) as { loops: Record<string, Record<string, string>> };
     expect(parsed.loops.x.run).toBe('echo hi');
+  });
+});
+
+describe('shouldCompactBeforeTick', () => {
+  it('compacts at or above the default 80% threshold', () => {
+    expect(
+      shouldCompactBeforeTick({ tokens: 220_000, contextWindow: 272_000, percent: 0.81 }),
+    ).toBe(true);
+    expect(shouldCompactBeforeTick({ tokens: 217_600, contextWindow: 272_000, percent: 0.8 })).toBe(
+      true,
+    );
+  });
+
+  it('does not compact below the threshold', () => {
+    expect(
+      shouldCompactBeforeTick({ tokens: 100_000, contextWindow: 272_000, percent: 0.37 }),
+    ).toBe(false);
+  });
+
+  it('never compacts on unknown usage (defensive)', () => {
+    expect(shouldCompactBeforeTick(undefined)).toBe(false);
+    // percent null happens right after a compaction, before the next LLM response
+    expect(shouldCompactBeforeTick({ tokens: null, contextWindow: 272_000, percent: null })).toBe(
+      false,
+    );
+    expect(shouldCompactBeforeTick({ tokens: 200_000, contextWindow: 0, percent: 0.9 })).toBe(
+      false,
+    );
+  });
+
+  it('honors a custom threshold', () => {
+    const usage = { tokens: 190_400, contextWindow: 272_000, percent: 0.7 };
+    expect(shouldCompactBeforeTick(usage, 0.7)).toBe(true);
+    expect(shouldCompactBeforeTick(usage, 0.75)).toBe(false);
+  });
+
+  it('reproduces the gpt-5.5 ceiling case: 268k/272k triggers compaction', () => {
+    // The observed crash: totalTokens rode 220k->268k until max_output_tokens underflowed to 1.
+    const nearCeiling = { tokens: 267_798, contextWindow: 272_000, percent: 267_798 / 272_000 };
+    expect(shouldCompactBeforeTick(nearCeiling)).toBe(true);
+  });
+});
+
+describe('validateCompactThreshold', () => {
+  it('accepts values strictly between 0 and 1', () => {
+    expect(validateCompactThreshold(0.8)).toBe(0.8);
+    expect(validateCompactThreshold(0.5)).toBe(0.5);
+    expect(validateCompactThreshold(0.99)).toBe(0.99);
+  });
+
+  it('rejects out-of-range and non-finite values', () => {
+    for (const bad of [0, 1, -0.1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => validateCompactThreshold(bad)).toThrow();
+    }
   });
 });
