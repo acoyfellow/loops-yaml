@@ -2,6 +2,8 @@
   const shellInstall = 'bun add -g github:acoyfellow/loops-yaml';
   const piInstall = 'pi install git:github.com/acoyfellow/loops-yaml';
   const piLoop = '/loop every 30s check MR !38955; stop when it merges';
+  const ompInstall = 'omp install github:acoyfellow/loops-yaml';
+  const ompLoop = '/loop every 30s check MR !38955; stop when it merges';
   const opencodeInstall =
     '{ "plugin": ["/ABSOLUTE/PATH/TO/loops-yaml/extensions/opencode/index.ts"] }';
   const opencodeLoop = 'every 30s check MR !38955; stop when it merges';
@@ -14,37 +16,6 @@
       if (copied === label) copied = '';
     }, 1600);
   };
-
-  // Candidate agents we could add a recurring-prompt extension for. Grouped by
-  // the integration surface that would carry the loop. These are candidates,
-  // not commitments — the shell scheduler below already works with every one
-  // of them today, because it only needs a command and an exit code.
-  type Candidate = { name: string; note: string };
-  const terminalAgents: Candidate[] = [
-    { name: 'Claude Code', note: 'hooks + slash commands + MCP' },
-    { name: 'Gemini CLI', note: 'open-source terminal agent, extensions' },
-    { name: 'Codex CLI', note: 'open-source terminal agent' },
-    { name: 'Goose', note: 'Block’s agent, first-class extensions' },
-    { name: 'Crush', note: 'Charm’s terminal agent' },
-    { name: 'Aider', note: 'Python pair-programmer, scriptable' },
-    { name: 'Amp', note: 'Sourcegraph agentic CLI' },
-    { name: 'Warp', note: 'agentic terminal, workflows' },
-  ];
-  const editorAgents: Candidate[] = [
-    { name: 'Cline', note: 'VS Code agent extension' },
-    { name: 'Roo Code', note: 'Cline fork, extensible' },
-    { name: 'Continue', note: 'open-source IDE assistant' },
-    { name: 'Cursor', note: 'rules + background agents' },
-    { name: 'Windsurf', note: 'Cascade agent' },
-    { name: 'Zed', note: 'editor agent panel' },
-    { name: 'Kilo Code', note: 'VS Code agent' },
-    { name: 'Copilot', note: 'CLI + coding agent' },
-  ];
-  const hostedAgents: Candidate[] = [
-    { name: 'OpenHands', note: 'open-source autonomous agent' },
-    { name: 'Devin', note: 'hosted agent' },
-    { name: 'Junie', note: 'JetBrains agent' },
-  ];
 </script>
 
 <div class="page">
@@ -66,22 +37,20 @@
       <h1>One idea.<br /><em>Every runtime.</em></h1>
       <p class="lede">
         A loop is an interval and a thing to do. That works the same whether the “thing” is a
-        shell command on a schedule or a prompt to a coding agent while you work. Below are the
-        runtimes that ship today, and the ones we want next.
+        shell command on a schedule or a prompt to a coding agent while you work. Everything
+        here ships today — install from the public repository, nothing hosted, no account.
       </p>
     </section>
 
     <section class="tier">
-      <div class="tier-head">
-        <h2>Available now</h2>
-        <p>Installed from the public repository. Nothing hosted, no account required.</p>
-      </div>
-
       <div class="install-grid">
         <article class="install-card">
-          <div class="card-head"><span class="mode-label">Shell commands</span><span class="availability on">Stable</span></div>
-          <h3>Schedule a command.</h3>
-          <p>Install the CLI, add a <code>loops.yaml</code>, then run it once or keep the watcher open. Works with any command that has an exit code.</p>
+          <div class="card-head">
+            <span class="runtime-mark" aria-hidden="true">$_</span>
+            <span class="availability on">Stable</span>
+          </div>
+          <h3>Shell scheduler</h3>
+          <p>Install the CLI, add a <code>loops.yaml</code>, run it once or leave the watcher open. Any command with an exit code — and it keeps running after the agent closes.</p>
           <div class="copy-row">
             <code>{shellInstall}</code>
             <button on:click={() => copy('shell', shellInstall)} aria-label="Copy shell install command">{copied === 'shell' ? 'Copied' : 'Copy'}</button>
@@ -90,8 +59,11 @@
         </article>
 
         <article class="install-card agent-card">
-          <div class="card-head"><span class="mode-label orange">Pi</span><span class="availability on">Stable</span></div>
-          <h3>Recurring prompts in Pi.</h3>
+          <div class="card-head">
+            <span class="runtime-mark pi" aria-hidden="true">π</span>
+            <span class="availability on">Stable</span>
+          </div>
+          <h3>Pi</h3>
           <p>Install the Pi package, reload the session, then describe the interval and the condition that ends the loop.</p>
           <div class="copy-row">
             <code>{piInstall}</code>
@@ -101,13 +73,32 @@
             <code>{piLoop}</code>
             <button on:click={() => copy('pi-loop', piLoop)} aria-label="Copy Pi loop example">{copied === 'pi-loop' ? 'Copied' : 'Copy'}</button>
           </div>
-          <p class="fine-print">5-second minimum · idle-only execution · 24-hour expiry · 100-run safety cap</p>
         </article>
 
         <article class="install-card agent-card">
-          <div class="card-head"><span class="mode-label">OpenCode</span><span class="availability on">Stable</span></div>
-          <h3>Same loops, in OpenCode.</h3>
-          <p>Point OpenCode at the plugin in <code>opencode.json</code>, restart, then describe the interval and the condition that ends the loop.</p>
+          <div class="card-head">
+            <span class="runtime-mark" aria-hidden="true">omp</span>
+            <span class="availability on">Stable</span>
+          </div>
+          <h3>omp</h3>
+          <p>Pi-family CLI, so the same extension loads directly. Install it as a plugin, then use <code>/loop</code> exactly as in Pi.</p>
+          <div class="copy-row">
+            <code>{ompInstall}</code>
+            <button on:click={() => copy('omp-install', ompInstall)} aria-label="Copy omp install command">{copied === 'omp-install' ? 'Copied' : 'Copy'}</button>
+          </div>
+          <div class="copy-row subdued">
+            <code>{ompLoop}</code>
+            <button on:click={() => copy('omp-loop', ompLoop)} aria-label="Copy omp loop example">{copied === 'omp-loop' ? 'Copied' : 'Copy'}</button>
+          </div>
+        </article>
+
+        <article class="install-card agent-card">
+          <div class="card-head">
+            <img class="runtime-logo" src="/logos/opencode.png" alt="OpenCode" width="22" height="27" />
+            <span class="availability on">Stable</span>
+          </div>
+          <h3>OpenCode</h3>
+          <p>Point OpenCode at the plugin in <code>opencode.json</code>, restart, then describe the interval and the stop condition.</p>
           <div class="copy-row">
             <code>{opencodeInstall}</code>
             <button on:click={() => copy('oc-install', opencodeInstall)} aria-label="Copy OpenCode plugin config">{copied === 'oc-install' ? 'Copied' : 'Copy'}</button>
@@ -121,49 +112,13 @@
       </div>
     </section>
 
-    <section class="tier">
-      <div class="tier-head">
-        <h2>Candidates</h2>
-        <p>
-          Agents we’d like a native recurring-prompt extension for. Each one exposes a plugin or
-          hook surface a loop could plug into. Want one sooner? <a href="https://github.com/acoyfellow/loops-yaml/issues">Open an issue.</a>
-        </p>
-      </div>
-
-      <div class="cand-group">
-        <p class="group-label">Terminal agents</p>
-        <ul class="cand-list">
-          {#each terminalAgents as a}
-            <li><span class="cand-name">{a.name}</span><span class="cand-note">{a.note}</span></li>
-          {/each}
-        </ul>
-      </div>
-
-      <div class="cand-group">
-        <p class="group-label">Editor agents</p>
-        <ul class="cand-list">
-          {#each editorAgents as a}
-            <li><span class="cand-name">{a.name}</span><span class="cand-note">{a.note}</span></li>
-          {/each}
-        </ul>
-      </div>
-
-      <div class="cand-group">
-        <p class="group-label">Hosted &amp; IDE agents</p>
-        <ul class="cand-list">
-          {#each hostedAgents as a}
-            <li><span class="cand-name">{a.name}</span><span class="cand-note">{a.note}</span></li>
-          {/each}
-        </ul>
-      </div>
-    </section>
-
     <section class="works-now">
-      <p class="mono-label">Already works with all of them</p>
+      <p class="mono-label">Any other agent?</p>
       <p>
-        You don’t have to wait for a native extension. The shell scheduler runs any command, so
-        it already drives every agent above through its own CLI — a native extension just makes
-        the loop <em>session-aware</em> (idle-only, stop conditions) instead of a blunt cron tick.
+        Most agents can already loop themselves — the shell scheduler runs any command, and any
+        agent with a shell can re-prompt on a timer. The native extensions above just make the
+        loop <em>session-aware</em>: idle-only, with a real stop condition, instead of a blunt
+        cron tick.
       </p>
       <a class="text-link" href="/#how">See how the two modes differ →</a>
     </section>
@@ -221,13 +176,14 @@
   .tier-head p { margin: 0; max-width: 60ch; color: var(--ink-dim); font-size: .9rem; }
   .tier-head a { color: var(--blue); text-decoration: none; }
 
-  .mono-label, .mode-label, .availability { font: 600 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
-  .install-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-  .install-card { padding: 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--layer); }
+  .mono-label, .availability { font: 600 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
+  .install-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  .install-card { display: flex; flex-direction: column; padding: 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--layer); }
   .agent-card { background: linear-gradient(135deg, var(--layer), var(--layer-2)); border-color: #305174; }
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2.2rem; }
-  .mode-label { margin: 0; color: var(--blue); }
-  .mode-label.orange { color: var(--accent); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.6rem; }
+  .runtime-mark { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 .5rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg-deep); color: var(--blue); font: 650 .82rem/1 ui-monospace, monospace; }
+  .runtime-mark.pi { color: var(--accent); font-size: 1.05rem; }
+  .runtime-logo { height: 27px; width: auto; object-fit: contain; }
   .availability { color: var(--ink-faint); font-size: .55rem; }
   .availability.on { color: #48c78e; }
   .install-card h3 { margin: 0; font-size: 1.2rem; letter-spacing: -.03em; }
@@ -239,16 +195,8 @@
   .copy-row button { border: 0; border-left: 1px solid var(--line); padding: 0 .8rem; background: transparent; color: var(--ink-dim); cursor: pointer; font: 600 .62rem ui-monospace, monospace; }
   .copy-row button:hover { color: var(--ink); background: var(--layer); }
   .install-card > a { display: inline-block; margin-top: 1rem; color: var(--blue); text-decoration: none; font: 600 .7rem ui-monospace, monospace; }
-  .fine-print { min-height: 0 !important; margin: 1rem 0 0; color: var(--ink-faint) !important; font: .65rem ui-monospace, monospace; }
 
-  .cand-group { margin-bottom: 1.8rem; }
-  .group-label { margin: 0 0 .8rem; color: var(--ink-faint); font: 600 .62rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
-  .cand-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 0; padding: 0; list-style: none; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--line); }
-  .cand-list li { display: flex; flex-direction: column; gap: .35rem; padding: 1rem 1.1rem; background: var(--layer); }
-  .cand-name { font-weight: 620; letter-spacing: -.01em; }
-  .cand-note { color: var(--ink-faint); font: .68rem/1.4 ui-monospace, monospace; }
-
-  .works-now { margin-top: 1rem; padding: 1.8rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-deep); }
+  .works-now { margin-top: 2rem; padding: 1.8rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-deep); }
   .works-now .mono-label { color: var(--accent); }
   .works-now p:not(.mono-label) { max-width: 70ch; margin: .8rem 0 0; color: var(--ink-dim); font-size: .9rem; }
   .works-now em { color: var(--blue); font-style: normal; }
@@ -259,12 +207,11 @@
 
   @media (max-width: 820px) {
     .topbar { padding-inline: 1rem; }
-    .install-grid { grid-template-columns: 1fr; }
-    .cand-list { grid-template-columns: repeat(2, 1fr); }
+    .install-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 560px) {
     .wrap { width: min(100% - 2rem, 1040px); }
-    .cand-list { grid-template-columns: 1fr; }
+    .install-grid { grid-template-columns: 1fr; }
     .footer { flex-direction: column; }
   }
 </style>
