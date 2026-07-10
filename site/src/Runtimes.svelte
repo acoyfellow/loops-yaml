@@ -177,7 +177,7 @@
   .tier-head a { color: var(--blue); text-decoration: none; }
 
   .mono-label, .availability { font: 600 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
-  .install-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  .install-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
   .install-card { display: flex; flex-direction: column; padding: 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--layer); }
   .agent-card { background: linear-gradient(135deg, var(--layer), var(--layer-2)); border-color: #305174; }
   .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.6rem; }
@@ -191,8 +191,8 @@
   .install-card code { color: var(--ink); }
   .copy-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin-top: 1rem; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-deep); }
   .copy-row.subdued { margin-top: .55rem; }
-  .copy-row code { min-width: 0; overflow-x: auto; padding: .75rem; color: var(--ink); font: 11.5px/1.4 ui-monospace, monospace; white-space: nowrap; }
-  .copy-row button { border: 0; border-left: 1px solid var(--line); padding: 0 .8rem; background: transparent; color: var(--ink-dim); cursor: pointer; font: 600 .62rem ui-monospace, monospace; }
+  .copy-row code { min-width: 0; padding: .75rem; color: var(--ink); font: 11.5px/1.5 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+  .copy-row button { align-self: stretch; border: 0; border-left: 1px solid var(--line); padding: 0 .8rem; background: transparent; color: var(--ink-dim); cursor: pointer; font: 600 .62rem ui-monospace, monospace; }
   .copy-row button:hover { color: var(--ink); background: var(--layer); }
   .install-card > a { display: inline-block; margin-top: 1rem; color: var(--blue); text-decoration: none; font: 600 .7rem ui-monospace, monospace; }
 
@@ -205,13 +205,12 @@
   .footer { display: flex; justify-content: space-between; gap: 1rem; padding-block: 3rem 4rem; margin-top: 3rem; border-top: 1px solid var(--line); color: var(--ink-faint); font: 500 .62rem ui-monospace, monospace; }
   .footer a { color: var(--ink-dim); text-decoration: none; }
 
-  @media (max-width: 820px) {
+  @media (max-width: 720px) {
     .topbar { padding-inline: 1rem; }
-    .install-grid { grid-template-columns: repeat(2, 1fr); }
+    .install-grid { grid-template-columns: 1fr; }
+    .footer { flex-direction: column; }
   }
   @media (max-width: 560px) {
     .wrap { width: min(100% - 2rem, 1040px); }
-    .install-grid { grid-template-columns: 1fr; }
-    .footer { flex-direction: column; }
   }
 </style>
