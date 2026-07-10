@@ -2,11 +2,6 @@
   import Fiber from './Fiber.svelte';
 
   const shellInstall = 'bun add -g github:acoyfellow/loops-yaml';
-  const piInstall = 'pi install git:github.com/acoyfellow/loops-yaml';
-  const piLoop = '/loop every 30s check MR !38955; stop when it merges';
-  const opencodeInstall =
-    '{ "plugin": ["/ABSOLUTE/PATH/TO/loops-yaml/extensions/opencode/index.ts"] }';
-  const opencodeLoop = 'every 30s check MR !38955; stop when it merges';
   const yaml = `loops:
   review:
     schedule: "0 8 * * *"   # omit for on-demand only
@@ -41,6 +36,7 @@
     </a>
     <nav aria-label="Primary navigation">
       <a href="#how">How it works</a>
+      <a href="/runtimes">Runtimes</a>
       <a href="/recipes">Recipes</a>
       <a class="source-link" href="https://github.com/acoyfellow/loops-yaml">Source <span aria-hidden="true">↗</span></a>
     </nav>
@@ -141,52 +137,26 @@
       <div class="chapter-head">
         <div>
           <p class="eyebrow">04 / Try it now</p>
-          <h2>Choose how you’ll run it.</h2>
+          <h2>Install it and go.</h2>
         </div>
-        <p>Install from the public repository. It runs on your machine or in your Pi or OpenCode session; no hosted account is required.</p>
+        <p>Install the scheduler from the public repository — no hosted account required. Then run a loop on demand, or leave it watching.</p>
       </div>
 
-      <div class="install-grid">
-        <article class="install-card">
-          <div class="card-head"><span class="mode-label">Shell commands</span><span class="availability">Bun required</span></div>
-          <h3>Schedule a command.</h3>
-          <p>Install the CLI, add a <code>loops.yaml</code>, then run it once or keep the watcher open.</p>
+      <div class="try-row">
+        <div class="try-install">
+          <span class="mono-label">Shell scheduler</span>
           <div class="copy-row">
             <code>{shellInstall}</code>
             <button on:click={() => copy('shell', shellInstall)} aria-label="Copy shell install command">{copied === 'shell' ? 'Copied' : 'Copy'}</button>
           </div>
-          <a href="https://github.com/acoyfellow/loops-yaml#install">Shell quickstart ↗</a>
-        </article>
+          <a class="text-link" href="https://github.com/acoyfellow/loops-yaml#install">Shell quickstart ↗</a>
+        </div>
 
-        <article class="install-card pi-card">
-          <div class="card-head"><span class="mode-label orange">Pi recurring prompts</span><span class="availability">Session scoped</span></div>
-          <h3>Keep the agent checking.</h3>
-          <p>Install the Pi package, reload the session, then describe the interval and the condition that ends the loop.</p>
-          <div class="copy-row">
-            <code>{piInstall}</code>
-            <button on:click={() => copy('pi-install', piInstall)} aria-label="Copy Pi install command">{copied === 'pi-install' ? 'Copied' : 'Copy'}</button>
-          </div>
-          <div class="copy-row subdued">
-            <code>{piLoop}</code>
-            <button on:click={() => copy('pi-loop', piLoop)} aria-label="Copy Pi loop example">{copied === 'pi-loop' ? 'Copied' : 'Copy'}</button>
-          </div>
-          <p class="fine-print">5-second minimum · idle-only execution · 24-hour expiry · 100-run safety cap</p>
-        </article>
-
-        <article class="install-card oc-card">
-          <div class="card-head"><span class="mode-label">OpenCode recurring prompts</span><span class="availability">Session scoped</span></div>
-          <h3>Same loops, in OpenCode.</h3>
-          <p>Point OpenCode at the plugin in <code>opencode.json</code>, restart, then describe the interval and the condition that ends the loop.</p>
-          <div class="copy-row">
-            <code>{opencodeInstall}</code>
-            <button on:click={() => copy('oc-install', opencodeInstall)} aria-label="Copy OpenCode plugin config">{copied === 'oc-install' ? 'Copied' : 'Copy'}</button>
-          </div>
-          <div class="copy-row subdued">
-            <code>{opencodeLoop}</code>
-            <button on:click={() => copy('oc-loop', opencodeLoop)} aria-label="Copy OpenCode loop example">{copied === 'oc-loop' ? 'Copied' : 'Copy'}</button>
-          </div>
-          <a href="https://github.com/acoyfellow/loops-yaml/blob/main/docs/opencode.md">OpenCode setup ↗</a>
-        </article>
+        <a class="runtimes-teaser" href="/runtimes">
+          <span class="mono-label">Prefer a coding agent?</span>
+          <p>Run the same loops as recurring prompts inside <b>Pi</b> and <b>OpenCode</b> today — with more agents on the way.</p>
+          <span class="teaser-cta">See all runtimes →</span>
+        </a>
       </div>
     </section>
 
@@ -282,7 +252,7 @@
 
   .demo-note { border-bottom: 1px solid var(--line); background: var(--bg-deep); }
   .note-inner { display: grid; grid-template-columns: 11rem 1fr auto; gap: 2rem; align-items: center; min-height: 92px; }
-  .mono-label, .eyebrow, .mode-label, .availability { font: 600 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
+  .eyebrow, .mode-label { font: 600 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
   .mono-label { color: var(--accent); }
   .note-inner p { margin: 0; color: var(--ink-dim); font-size: .82rem; }
   .note-inner a { color: var(--blue); text-decoration: none; font: 600 .7rem/1 ui-monospace, monospace; white-space: nowrap; }
@@ -297,8 +267,8 @@
   .mode-grid article { display: flex; min-height: 310px; flex-direction: column; padding: 1.6rem; background: var(--layer); }
   .index { color: var(--accent); font: 650 .65rem/1 ui-monospace, monospace; }
   .mode-label { margin: 3.6rem 0 .75rem; color: var(--blue); }
-  .mode-grid h3, .install-card h3 { margin: 0; font-size: 1.25rem; letter-spacing: -.03em; }
-  .mode-grid p, .install-card > p { color: var(--ink-dim); font-size: .85rem; }
+  .mode-grid h3 { margin: 0; font-size: 1.25rem; letter-spacing: -.03em; }
+  .mode-grid p { color: var(--ink-dim); font-size: .85rem; }
   .mode-grid code { margin-top: auto; color: var(--ink); font: 12px ui-monospace, monospace; }
 
   .canvas { background-size: 100% 100%; background-repeat: no-repeat; }
@@ -315,21 +285,21 @@
   .cmds span { color: #2f4058; }
 
   .try { border-bottom: 1px solid var(--line); }
-  .install-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 3.5rem; }
-  .install-card { padding: 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--layer); }
-  .pi-card { background: linear-gradient(135deg, var(--layer), var(--layer-2)); border-color: #305174; }
-  .oc-card { background: linear-gradient(135deg, var(--layer), var(--layer-2)); border-color: #305174; }
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2.8rem; }
-  .mode-label { margin: 0; color: var(--blue); }
-  .availability { color: var(--ink-faint); font-size: .55rem; }
-  .install-card > p { min-height: 3.2rem; }
+  .try-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3.5rem; }
+  .try-install { display: flex; flex-direction: column; padding: 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--layer); }
+  .try-install .mono-label { color: var(--blue); }
+  .runtimes-teaser { display: flex; flex-direction: column; padding: 1.5rem; border: 1px solid #305174; border-radius: var(--radius); background: linear-gradient(135deg, var(--layer), var(--layer-2)); text-decoration: none; color: var(--ink); transition: transform .15s, border-color .15s; }
+  .runtimes-teaser:hover { transform: translateY(-1px); border-color: var(--line-strong); }
+  .runtimes-teaser .mono-label { color: var(--accent); }
+  .runtimes-teaser p { margin: .75rem 0 0; color: var(--ink-dim); font-size: .88rem; }
+  .runtimes-teaser b { color: var(--ink); font-weight: 620; }
+  .teaser-cta { margin-top: auto; padding-top: 1rem; color: var(--blue); font: 600 .72rem ui-monospace, monospace; }
+  .mono-label { font: 600 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .09em; }
   .copy-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin-top: 1rem; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-deep); }
-  .copy-row.subdued { margin-top: .55rem; }
   .copy-row code { min-width: 0; overflow-x: auto; padding: .75rem; color: var(--ink); font: 11.5px/1.4 ui-monospace, monospace; white-space: nowrap; }
   .copy-row button { border: 0; border-left: 1px solid var(--line); padding: 0 .8rem; background: transparent; color: var(--ink-dim); cursor: pointer; font: 600 .62rem ui-monospace, monospace; }
   .copy-row button:hover { color: var(--ink); background: var(--layer); }
-  .install-card > a { display: inline-block; margin-top: 1rem; color: var(--blue); text-decoration: none; font: 600 .7rem ui-monospace, monospace; }
-  .fine-print { min-height: 0 !important; margin: 1rem 0 0; color: var(--ink-faint) !important; font: .65rem ui-monospace, monospace; }
+  .try-install > a { margin-top: 1rem; color: var(--blue); text-decoration: none; font: 600 .7rem ui-monospace, monospace; }
 
   .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1rem; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--line); }
   .principles article { padding: 1.4rem; background: var(--bg-deep); }
@@ -353,7 +323,7 @@
     .hero-inner { min-height: 610px; padding-bottom: 7rem; }
     .hero-meta { left: 0; right: auto; bottom: 2.2rem; }
     .note-inner { grid-template-columns: 1fr; gap: .5rem; padding-block: 1.2rem; }
-    .chapter-head, .install-grid, .source-cta { grid-template-columns: 1fr; gap: 1.5rem; }
+    .chapter-head, .try-row, .source-cta { grid-template-columns: 1fr; gap: 1.5rem; }
     .mode-grid, .principles { grid-template-columns: 1fr; }
     .mode-grid article { min-height: 240px; }
     .mode-label { margin-top: 2.5rem; }

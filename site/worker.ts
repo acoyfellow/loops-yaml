@@ -6,6 +6,8 @@ import App from './src/App.svelte';
 // @ts-expect-error -- esbuild-svelte emits a Svelte component module; types are not first-class here.
 import Recipes from './src/Recipes.svelte';
 // @ts-expect-error -- esbuild-svelte emits a Svelte component module; types are not first-class here.
+import Runtimes from './src/Runtimes.svelte';
+// @ts-expect-error -- esbuild-svelte emits a Svelte component module; types are not first-class here.
 import Share from './src/Share.svelte';
 import { headMeta } from './src/head';
 
@@ -18,12 +20,27 @@ app.get(
   '/',
   svelteRenderer(App, {
     hydrateAs: 'app',
-    title: 'loops.yaml — schedule a command, or run it on demand',
+    title: 'loops.yaml — a small scheduler for commands and Pi prompts',
     head: headMeta({
       path: '/',
-      title: 'loops.yaml — schedule a command, or run it on demand',
+      title: 'loops.yaml — a small scheduler for commands and Pi prompts',
       description:
-        'Run commands on a cron schedule, or on demand. A loop is a schedule plus a command — nothing else.',
+        'Try the live demo, install the shell scheduler or Pi recurring-prompt extension, and read the complete source on GitHub.',
+    }),
+    props: {},
+  }),
+);
+
+app.get(
+  '/runtimes',
+  svelteRenderer(Runtimes, {
+    hydrateAs: 'runtimes',
+    title: 'loops.yaml runtimes — every place a loop can run',
+    head: headMeta({
+      path: '/runtimes',
+      title: 'loops.yaml runtimes — every place a loop can run',
+      description:
+        'Run loops as a shell scheduler or as recurring prompts inside Pi and OpenCode today, with more coding agents on the roadmap.',
     }),
     props: {},
   }),
@@ -33,12 +50,12 @@ app.get(
   '/recipes',
   svelteRenderer(Recipes, {
     hydrateAs: 'recipes',
-    title: 'loops.yaml — recipes: small loops, real leverage',
+    title: 'loops.yaml recipes — working commands you can inspect',
     head: headMeta({
       path: '/recipes',
-      title: 'loops.yaml recipes — small loops, real leverage',
+      title: 'loops.yaml recipes — working commands you can inspect',
       description:
-        'A grounded collection of small, useful loops: backups, health checks, Cloudflare automation, watchers. VPS + agent + Cloudflare = freedom through simplicity.',
+        'Copy a readable loop for backups, health checks, Cloudflare automation, or watchers. Run it on demand before adding a schedule.',
     }),
     props: {},
   }),

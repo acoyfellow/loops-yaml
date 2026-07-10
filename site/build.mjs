@@ -5,6 +5,7 @@ const result = await buildHonoSvelte({
   outDir: './build',
   components: {
     app: './src/App.svelte',
+    runtimes: './src/Runtimes.svelte',
     recipes: './src/Recipes.svelte',
     share: './src/Share.svelte',
   },
