@@ -156,4 +156,21 @@ describe.if(Boolean(loopsYamlPi))('pi loop tick compaction', () => {
     expect(h.compactCalls).toBe(1);
     expect(h.sent).toHaveLength(0);
   });
+
+  it('persists the stop gate and never delivers a deleted due task', async () => {
+    const h = harness({ tokens: 90_000, contextWindow: 272_000, percent: 90_000 / 272_000 });
+    await bindWithDueTask(h);
+    const task = latestTask(h);
+
+    const result = await h.api._tool.execute('stop-1', { action: 'delete', id: task.id });
+    expect(result.content[0].text).toBe(`Stopped loop ${task.id}.`);
+    expect(result.details.tasks).toHaveLength(0);
+    const persisted = h.entries
+      .filter((entry: any) => entry.customType === 'loops-yaml-pi-state')
+      .at(-1);
+    expect(persisted.data.tasks).toHaveLength(0);
+
+    await Bun.sleep(1_100);
+    expect(h.sent).toHaveLength(0);
+  });
 });
