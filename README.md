@@ -31,7 +31,9 @@ The included Pi extension runs session-scoped recurring prompts while Pi is open
 /loop clear
 ```
 
-The agent can create, edit, and stop the same loops with the `loops_task` tool. Editing changes the interval, prompt, limits, or expiry in place without stopping and recreating the loop. Tasks persist in the Pi session, default to a 24-hour expiry and 100-run cap, never overlap agent turns, and instruct the agent to delete the task when its terminal condition is met.
+The agent can create, edit, and stop the same loops with the `loops_task` tool. Editing changes the interval, prompt, limits, expiry, or compaction threshold in place without stopping and recreating the loop. Tasks persist in the Pi session, default to a 24-hour expiry and 100-run cap, never overlap agent turns, and instruct the agent to delete the task when its terminal condition is met.
+
+Because every tick adds to the same session, Pi loops compact at 80% context usage by default. Compaction is part of the due tick: the prompt is held while compaction runs, then that same tick is delivered immediately after compaction succeeds. A failed compaction neither injects into the nearly full context nor increments the run count. Set `compactThreshold` to a fraction between 0 and 1 to override the default.
 
 Because each tick injects its prompt into the same long-lived session, context grows monotonically. To avoid running a session into the model's context ceiling (where the output-token budget underflows and the provider rejects the request), a loop compacts the session before a tick once context usage reaches **80%** of the window. Override per loop with `compactThreshold` (a fraction between 0 and 1 exclusive) via the `loops_task` tool.
 

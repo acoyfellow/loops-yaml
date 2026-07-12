@@ -1,5 +1,16 @@
-import { describe, expect, it } from 'bun:test';
-import { parseYaml } from '../src/config';
+import { afterEach, describe, expect, it } from 'bun:test';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { parseYaml, saveLoops } from '../src/config';
+
+const temporaryDirectories: string[] = [];
+afterEach(async () => {
+  await Promise.all(
+    temporaryDirectories.splice(0).map((path) => rm(path, { recursive: true, force: true })),
+  );
+});
+
 import { cronMatches, parseCron } from '../src/cron';
 import {
   isTaskExpired,
@@ -109,6 +120,30 @@ loops:
     run: echo hi
 `) as { loops: Record<string, Record<string, string>> };
     expect(parsed.loops.x.run).toBe('echo hi');
+  });
+
+  it('writes the supported shape atomically and safely quotes commands', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'loops-config-'));
+    temporaryDirectories.push(directory);
+    const path = join(directory, 'loops.yaml');
+    await saveLoops(path, [
+      { name: 'review', run: 'echo "hello: #world"', schedule: '*/5 * * * *', cwd: './repo' },
+    ]);
+    const text = await readFile(path, 'utf8');
+    const parsed = parseYaml(text) as { loops: Record<string, Record<string, string>> };
+    expect(parsed.loops.review).toEqual({
+      run: 'echo "hello: #world"',
+      schedule: '*/5 * * * *',
+      cwd: './repo',
+    });
+  });
+
+  it('rejects names that could alter YAML structure or state paths', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'loops-config-'));
+    temporaryDirectories.push(directory);
+    await expect(
+      saveLoops(join(directory, 'loops.yaml'), [{ name: '../escape', run: 'true' }]),
+    ).rejects.toThrow('loop name');
   });
 });
 

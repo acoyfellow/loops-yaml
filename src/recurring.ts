@@ -21,10 +21,7 @@ export interface RecurringTask {
   runs: number;
   maxRuns?: number;
   expiresAt?: number;
-  /**
-   * Fraction of the context window (0..1) at or above which this loop compacts
-   * before injecting its next prompt. Defaults to DEFAULT_COMPACT_THRESHOLD.
-   */
+  /** Fraction of the context window that triggers compaction before a tick. */
   compactThreshold?: number;
 }
 
@@ -82,46 +79,23 @@ export function markTaskRun(task: RecurringTask, now = Date.now()): RecurringTas
   };
 }
 
-/**
- * Fraction of the context window at or above which a loop tick should compact
- * BEFORE injecting its next prompt. Long-lived loops otherwise grow one session
- * monotonically until the model's output-token budget underflows (observed:
- * gpt-5.5 at 272k ctx -> gateway rejects `max_output_tokens: 1`). Compacting at
- * 80% leaves headroom for the injected prompt + a full response.
- */
 export const DEFAULT_COMPACT_THRESHOLD = 0.8;
 
-/** Minimal shape of pi's ContextUsage that the compaction decision needs. */
 export interface ContextUsageLike {
-  /** Estimated context tokens, or null if unknown (e.g. just after compaction). */
   tokens: number | null;
   contextWindow: number;
-  /** Usage as a fraction of the window (0..1), or null if tokens is unknown. */
   percent: number | null;
 }
 
-/**
- * Decide whether a loop tick should compact before injecting its next prompt.
- *
- * Pure and defensive: unknown usage (`undefined`), unknown token count
- * (`percent === null`, e.g. immediately after a compaction), or a non-positive
- * window never triggers compaction, so we never compact blindly or in a loop.
- */
 export function shouldCompactBeforeTick(
   usage: ContextUsageLike | undefined,
   threshold = DEFAULT_COMPACT_THRESHOLD,
 ): boolean {
-  if (!usage) return false;
-  if (usage.percent === null || usage.tokens === null) return false;
+  if (!usage || usage.percent === null || usage.tokens === null) return false;
   if (!(usage.contextWindow > 0)) return false;
   return usage.percent >= threshold;
 }
 
-/**
- * Validate a user-supplied compaction threshold. Must be a number strictly
- * between 0 and 1 (exclusive): 0 would compact forever, 1 would never fire
- * before the ceiling it exists to avoid. Returns the value, or throws.
- */
 export function validateCompactThreshold(value: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || value >= 1) {
     throw new Error('compactThreshold must be a number between 0 and 1 (exclusive), e.g. 0.8');

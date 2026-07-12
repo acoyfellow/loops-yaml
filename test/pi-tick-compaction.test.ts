@@ -1,9 +1,5 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
 
-// The pi extension imports peer deps (@earendil-works/pi-ai, typebox) that are
-// provided by the host pi install, not this repo. Load it dynamically so the
-// suite skips cleanly when those deps are absent (e.g. a fresh clone) instead
-// of hard-failing at module load.
 let loopsYamlPi: typeof import('../extensions/pi/index')['default'] | undefined;
 try {
   loopsYamlPi = (await import('../extensions/pi/index')).default;
@@ -11,7 +7,17 @@ try {
   loopsYamlPi = undefined;
 }
 
-// Minimal fake of the pi ExtensionAPI + ExtensionContext surface tick() touches.
+type CompactOptions = {
+  onComplete?: (result?: unknown) => void;
+  onError?: (error: Error) => void;
+};
+
+const shutdowns: Array<() => Promise<void>> = [];
+
+afterEach(async () => {
+  await Promise.all(shutdowns.splice(0).map((shutdown) => shutdown()));
+});
+
 function harness(
   usage: { tokens: number | null; contextWindow: number; percent: number | null } | undefined,
 ) {
@@ -20,35 +26,40 @@ function harness(
   const sent: any[] = [];
   const entries: any[] = [];
   let compactCalls = 0;
+  let pendingCompaction: CompactOptions | undefined;
 
   const api: any = {
     on: (name: string, fn: Handler) => {
-      const list = events[name] ?? [];
-      list.push(fn);
-      events[name] = list;
+      events[name] = [...(events[name] ?? []), fn];
     },
     appendEntry: (customType: string, data: any) =>
       entries.push({ type: 'custom', customType, data }),
-    sendMessage: (msg: any) => sent.push(msg),
+    sendMessage: (message: any) => sent.push(message),
     registerCommand: () => {},
-    registerTool: (t: any) => (api._tool = t),
+    registerTool: (tool: any) => (api._tool = tool),
   };
-  loopsYamlPi(api);
+  loopsYamlPi!(api);
 
   const ctx: any = {
     hasUI: false,
     isIdle: () => true,
     getContextUsage: () => usage,
-    compact: () => {
-      compactCalls++;
+    compact: (options: CompactOptions = {}) => {
+      compactCalls += 1;
+      pendingCompaction = options;
     },
     sessionManager: { getBranch: () => entries },
     ui: {
       notify: () => {},
       setStatus: () => {},
-      theme: { fg: (_: string, s: string) => s },
+      theme: { fg: (_: string, text: string) => text },
     },
   };
+
+  const shutdown = async () => {
+    for (const fn of events.session_shutdown ?? []) await fn({}, ctx);
+  };
+  shutdowns.push(shutdown);
 
   return {
     api,
@@ -56,6 +67,17 @@ function harness(
     events,
     sent,
     entries,
+    shutdown,
+    completeCompaction() {
+      const callback = pendingCompaction?.onComplete;
+      pendingCompaction = undefined;
+      callback?.();
+    },
+    failCompaction(error = new Error('compaction failed')) {
+      const callback = pendingCompaction?.onError;
+      pendingCompaction = undefined;
+      callback?.(error);
+    },
     get compactCalls() {
       return compactCalls;
     },
@@ -73,47 +95,65 @@ async function bindWithDueTask(
     prompt: 'do work',
     ...create,
   });
-  const state = h.entries.filter((e: any) => e.customType === 'loops-yaml-pi-state').at(-1);
-  state.data.tasks[0].nextRunAt = Date.now() - 1000; // force due
-  for (const fn of h.events.session_start ?? []) await fn({}, h.ctx); // reload as due
+  const state = h.entries.filter((entry: any) => entry.customType === 'loops-yaml-pi-state').at(-1);
+  state.data.tasks[0].nextRunAt = Date.now() - 1_000;
+  for (const fn of h.events.session_start ?? []) await fn({}, h.ctx);
 }
 
-describe.if(Boolean(loopsYamlPi))('pi loop tick compaction (e2e)', () => {
-  it('compacts and does NOT inject when near the context ceiling', async () => {
+function latestTask(h: ReturnType<typeof harness>) {
+  return h.entries.filter((entry: any) => entry.customType === 'loops-yaml-pi-state').at(-1).data
+    .tasks[0];
+}
+
+describe.if(Boolean(loopsYamlPi))('pi loop tick compaction', () => {
+  it('delivers the same due tick immediately after successful compaction', async () => {
     const h = harness({ tokens: 267_798, contextWindow: 272_000, percent: 267_798 / 272_000 });
     await bindWithDueTask(h);
-    await Bun.sleep(1200); // let the 1s check timer fire
-    expect(h.compactCalls).toBeGreaterThanOrEqual(1);
-    expect(h.sent.length).toBe(0); // never inject on top of a full window
-    // re-entrancy guard: after compacting, task was rescheduled ~5s out, so a
-    // second timer fire within the window must NOT compact again immediately.
-    await Bun.sleep(1200);
+
+    await Bun.sleep(1_100);
     expect(h.compactCalls).toBe(1);
-  });
+    expect(h.sent).toHaveLength(0);
+    expect(latestTask(h).runs).toBe(0);
 
-  it('injects the prompt normally when there is headroom', async () => {
-    const h = harness({ tokens: 90_000, contextWindow: 272_000, percent: 90_000 / 272_000 });
-    await bindWithDueTask(h);
-    await Bun.sleep(1200);
-    expect(h.compactCalls).toBe(0);
-    expect(h.sent.length).toBeGreaterThanOrEqual(1);
+    h.completeCompaction();
+    expect(h.sent).toHaveLength(1);
     expect(h.sent[0].content).toContain('do work');
+    expect(latestTask(h).runs).toBe(1);
+
+    await Bun.sleep(1_100);
+    expect(h.compactCalls).toBe(1);
+    expect(h.sent).toHaveLength(1);
   });
 
-  it('injects normally when usage is unknown (defensive: no blind compaction)', async () => {
-    const h = harness(undefined);
+  it('does not inject or count the tick when compaction fails', async () => {
+    const h = harness({ tokens: 220_000, contextWindow: 272_000, percent: 220_000 / 272_000 });
     await bindWithDueTask(h);
-    await Bun.sleep(1200);
-    expect(h.compactCalls).toBe(0);
-    expect(h.sent.length).toBeGreaterThanOrEqual(1);
+
+    await Bun.sleep(1_100);
+    h.failCompaction();
+    expect(h.sent).toHaveLength(0);
+    expect(latestTask(h).runs).toBe(0);
+  });
+
+  it('injects normally when there is headroom or usage is unknown', async () => {
+    for (const usage of [
+      { tokens: 90_000, contextWindow: 272_000, percent: 90_000 / 272_000 },
+      undefined,
+    ]) {
+      const h = harness(usage);
+      await bindWithDueTask(h);
+      await Bun.sleep(1_100);
+      expect(h.compactCalls).toBe(0);
+      expect(h.sent).toHaveLength(1);
+      await h.shutdown();
+    }
   });
 
   it('honors a per-task compactThreshold override', async () => {
-    // 60% usage is below the 0.8 default but above a custom 0.5 threshold.
     const h = harness({ tokens: 163_200, contextWindow: 272_000, percent: 0.6 });
     await bindWithDueTask(h, { compactThreshold: 0.5 });
-    await Bun.sleep(1200);
-    expect(h.compactCalls).toBeGreaterThanOrEqual(1);
-    expect(h.sent.length).toBe(0);
+    await Bun.sleep(1_100);
+    expect(h.compactCalls).toBe(1);
+    expect(h.sent).toHaveLength(0);
   });
 });

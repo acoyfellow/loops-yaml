@@ -59,13 +59,15 @@ every 30s check MR !38955; stop this loop once it merges
 
 The agent calls `loops_task` with `action: "create"`, and once the MR merges it
 calls `action: "delete"` to stop the loop. You can also ask it to `list`,
-`delete <id>`, or `clear` all loops.
+`edit <id>` (changing its interval, prompt, limits, or expiry in place), `delete <id>`,
+or `clear` all loops.
 
 `loops_task` actions:
 
 | Action | Arguments | Does |
 |---|---|---|
 | `create` | `interval`, `prompt`, `maxRuns?`, `expiresIn?` | Start a recurring prompt. |
+| `edit` | `id`; one or more of `interval`, `prompt`, `maxRuns`, `expiresIn` | Update a running loop in place. |
 | `list` | — | One line per loop: id, interval, next run, run count, prompt. |
 | `delete` | `id` | Stop one loop. |
 | `clear` | — | Stop every loop. |

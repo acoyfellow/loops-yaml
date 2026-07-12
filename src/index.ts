@@ -1,4 +1,4 @@
-export { findLoopsFile, loadLoops, parseYaml } from './config';
+export { findLoopsFile, loadLoops, parseYaml, saveLoops, validateLoopName } from './config';
 export { type Cron, cronMatches, parseCron } from './cron';
 export {
   formatInterval,

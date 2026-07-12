@@ -102,6 +102,48 @@ export const LoopsPlugin: Plugin = async ({ client, project, directory }) => {
     void client.tui.showToast({ body: { message, variant } }).catch(() => {});
   };
 
+  const editTask = (input: {
+    id: string;
+    interval?: string;
+    prompt?: string;
+    maxRuns?: number;
+    expiresIn?: string;
+  }): RecurringTask => {
+    const existing = tasks.get(input.id);
+    if (!existing) throw new Error(`No loop ${input.id}.`);
+    if (
+      input.interval === undefined &&
+      input.prompt === undefined &&
+      input.maxRuns === undefined &&
+      input.expiresIn === undefined
+    ) {
+      throw new Error(
+        'at least one of interval, prompt, maxRuns, or expiresIn is required for edit',
+      );
+    }
+    const now = Date.now();
+    const everyMs = input.interval ? parseInterval(input.interval).everyMs : existing.everyMs;
+    const prompt = input.prompt === undefined ? existing.prompt : input.prompt.trim();
+    const maxRuns = input.maxRuns ?? existing.maxRuns;
+    if (!prompt) throw new Error('prompt is required');
+    if (maxRuns !== undefined && (!Number.isInteger(maxRuns) || maxRuns < 1 || maxRuns > 10_000)) {
+      throw new Error('maxRuns must be an integer between 1 and 10000');
+    }
+    const task: RecurringTask = {
+      ...existing,
+      prompt,
+      everyMs,
+      nextRunAt: input.interval ? now + everyMs : existing.nextRunAt,
+      maxRuns,
+      expiresAt: input.expiresIn
+        ? now + parseInterval(input.expiresIn).everyMs
+        : existing.expiresAt,
+    };
+    tasks.set(task.id, task);
+    persist();
+    return task;
+  };
+
   const createTask = (input: {
     interval: string;
     prompt: string;
@@ -221,11 +263,11 @@ export const LoopsPlugin: Plugin = async ({ client, project, directory }) => {
     tool: {
       loops_task: tool({
         description:
-          'Create, list, delete, or clear session-scoped recurring OpenCode prompts. Intervals support 30s, 5m, 2h, and 1d. Tasks run only while OpenCode is open and the session is idle. Use this when the user asks to check or repeat work on an interval, and delete a task as soon as its terminal condition is satisfied.',
+          'Create, edit, list, delete, or clear session-scoped recurring OpenCode prompts. Editing updates a running loop in place without stopping it. Intervals support 30s, 5m, 2h, and 1d. Tasks run only while OpenCode is open and the session is idle. Use this when the user asks to check or repeat work on an interval, and delete a task as soon as its terminal condition is satisfied.',
         args: {
           action: tool.schema
-            .enum(['create', 'list', 'delete', 'clear'])
-            .describe('create, list, delete, or clear loops'),
+            .enum(['create', 'edit', 'list', 'delete', 'clear'])
+            .describe('create, edit, list, delete, or clear loops'),
           interval: tool.schema
             .string()
             .optional()
@@ -236,7 +278,7 @@ export const LoopsPlugin: Plugin = async ({ client, project, directory }) => {
             .describe(
               'For create: complete prompt to execute each interval, including its stop condition',
             ),
-          id: tool.schema.string().optional().describe('For delete: task id'),
+          id: tool.schema.string().optional().describe('For edit or delete: task id'),
           maxRuns: tool.schema
             .number()
             .optional()
@@ -259,6 +301,18 @@ export const LoopsPlugin: Plugin = async ({ client, project, directory }) => {
             tasks.clear();
             persist();
             return 'Cleared all loops.';
+          }
+
+          if (args.action === 'edit') {
+            if (!args.id) throw new Error('id is required for edit');
+            const task = editTask({
+              id: args.id,
+              interval: args.interval,
+              prompt: args.prompt,
+              maxRuns: args.maxRuns,
+              expiresIn: args.expiresIn,
+            });
+            return `Updated ${taskLine(task)}.`;
           }
 
           if (args.action === 'delete') {

@@ -11,9 +11,9 @@
       <span class="mark" aria-hidden="true"></span>
       <span class="wordmark">loops<span class="ext">.yaml</span></span>
     </div>
-    <h1>A loop is a schedule<br />plus a command.</h1>
-    <p class="sub">Run anything on a cron schedule, or on demand.</p>
-    <code class="cmd">$ bun add -g github:acoyfellow/loops-yaml</code>
+    <h1>Run it now.<br />Run it again later.</h1>
+    <p class="sub">A small scheduler for commands and recurring Pi prompts.</p>
+    <code class="cmd">$ pi install git:github.com/acoyfellow/loops-yaml</code>
   </div>
 </div>
 

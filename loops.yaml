@@ -1,12 +1,15 @@
-# A loop is a schedule plus a command. Nothing else.
-# Omit `schedule` to make a loop on-demand only (`loops run <name>`).
-
 loops:
-  hello:
-    schedule: "*/5 * * * *"   # every 5 minutes
-    run: echo "hello from the $LOOP_NAME loop at $(date)"
-
   kylie-reviews:
-    schedule: "*/30 * * * *"   # bounded DM + tracked-MR pass every 30 minutes
-    run: ./scripts/kylie-review-loop.sh
-    cwd: ../review-loop-lab
+    schedule: "*/30 * * * *"
+    run: "./scripts/kylie-review-loop.sh"
+    cwd: "/Users/jcoeyman/cloudflare/review-loop-lab"
+
+  disk-cleanup:
+    schedule: "0 9 * * *"   # daily at 09:00 — safe reclaims, preserves all logs + models
+    run: "$HOME/.mote/scripts/maintenance.sh cleanup"
+    cwd: "/Users/jcoeyman/.mote"
+
+  learn-from:
+    schedule: "0 8,14,20 * * *"   # 3x/day — fan out parallel deep profiles of due learn-targets
+    run: "./.context/scripts/learn-from.sh"
+    cwd: "/Users/jcoeyman/cloudflare"

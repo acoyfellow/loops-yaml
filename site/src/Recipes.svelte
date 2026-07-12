@@ -32,17 +32,19 @@
         <span class="mark" aria-hidden="true"></span>
         <span class="wordmark">loops<span class="ext">.yaml</span></span>
       </a>
-      <a class="ghlink" href="https://github.com/acoyfellow/loops-yaml">GitHub ↗</a>
+      <nav aria-label="Recipe navigation">
+        <a href="/">Overview</a>
+        <a class="ghlink" href="https://github.com/acoyfellow/loops-yaml">Source ↗</a>
+      </nav>
     </header>
 
     <section class="intro">
-      <p class="kicker">Recipes</p>
-      <h1>Small loops, real leverage.</h1>
+      <p class="kicker">Working examples</p>
+      <h1>Start with a command<br />you can inspect.</h1>
       <p class="lede">
-        A loop is a schedule plus a command — so the question is just <em>what command?</em>
-        A VPS, a coding agent, and a Cloudflare token go a long way. These are the kind of
-        useful, unglamorous jobs you can wire up in a minute. Copy one into
-        <code>loops.yaml</code> and change the values.
+        Each recipe is a small, readable starting point. Copy one into <code>loops.yaml</code>,
+        review its paths and credentials, run it once on demand, then add a schedule when you
+        trust the result.
       </p>
     </section>
 
@@ -52,7 +54,7 @@
         <input
           class="search"
           type="search"
-          placeholder="filter — r2, cert, dns, backup…"
+          placeholder="filter recipes — r2, cert, dns, backup…"
           bind:value={query}
           aria-label="Filter recipes"
         />
@@ -91,7 +93,8 @@
 
     <footer class="foot">
       <a href="/">← loops.yaml</a>
-      <span>MIT</span>
+      <span>Demo deployed on Cloudflare Workers</span>
+      <a href="https://github.com/acoyfellow/loops-yaml">Source ↗</a>
     </footer>
   </div>
 </div>
@@ -119,15 +122,17 @@
   }
   .wordmark { font-weight: 600; }
   .ext { color: var(--ink-faint); font-weight: 400; }
-  .ghlink { color: var(--ink-dim); text-decoration: none; font-size: 0.9rem; }
-  .ghlink:hover { color: var(--ink); }
+  .head nav { display: flex; align-items: center; gap: 1.3rem; }
+  .head nav a { color: var(--ink-dim); text-decoration: none; font: 600 0.7rem/1 ui-monospace, monospace; }
+  .head nav a:hover { color: var(--ink); }
+  .ghlink { padding: 0.55rem 0.75rem; border: 1px solid var(--line); border-radius: 7px; }
 
   .intro { padding: 2rem 0 2.5rem; }
   .kicker {
     margin: 0 0 0.8rem; font: 600 0.72rem/1 ui-monospace, monospace;
     text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-faint);
   }
-  h1 { font-size: clamp(1.9rem, 4.5vw, 2.8rem); letter-spacing: -0.035em; margin: 0; font-weight: 600; }
+  h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1.03; letter-spacing: -0.05em; margin: 0; font-weight: 680; }
   .lede { color: var(--ink-dim); max-width: 64ch; margin: 1rem 0 0; }
   .lede em { color: var(--ink); font-style: normal; }
   .lede code { color: var(--blue); font: 13px ui-monospace, monospace; }

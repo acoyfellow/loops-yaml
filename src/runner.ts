@@ -61,6 +61,36 @@ export async function readLatest(name: string): Promise<RunRecord | null> {
   }
 }
 
+/** Loop directory names with any state on disk, regardless of loops.yaml. */
+export async function listStateNames(): Promise<string[]> {
+  const entries = await readdir(STATE_DIR, { withFileTypes: true }).catch(() => []);
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name !== 'watchers')
+    .map((entry) => entry.name);
+}
+
+function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export type RunStatus = 'never-run' | 'running' | 'stalled' | 'done' | 'failed';
+
+/**
+ * Classify a run record without trusting exitCode alone: a record with no
+ * finishedAt and a dead pid is a stalled/orphaned run, not "still running".
+ */
+export function statusOf(record: RunRecord | null): RunStatus {
+  if (!record) return 'never-run';
+  if (record.finishedAt) return record.exitCode === 0 ? 'done' : 'failed';
+  if (record.pid != null && isAlive(record.pid)) return 'running';
+  return 'stalled';
+}
+
 /** Tail the most recent log for a loop. */
 export async function tailLatest(name: string, lines = 40): Promise<string> {
   const latest = await readLatest(name);

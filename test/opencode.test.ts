@@ -68,7 +68,33 @@ describe('opencode loops_task tool', () => {
     expect(await t.execute({ action: 'list' }, ctx)).toBe('No active loops.');
   });
 
-  it('validates create arguments', async () => {
+  it('edits a running loop in place and persists the update', async () => {
+    const { hooks, ctx } = await setup('edit');
+    const t = hooks.tool!.loops_task;
+    const created = await t.execute(
+      { action: 'create', interval: '30s', prompt: 'old prompt', maxRuns: 10 },
+      ctx,
+    );
+    const id = created.split(' ')[1];
+    const before = JSON.parse(readFileSync(join(dir, 'edit.json'), 'utf8')).tasks[0];
+
+    const updated = await t.execute(
+      { action: 'edit', id, interval: '1m', prompt: 'new prompt', maxRuns: 20 },
+      ctx,
+    );
+    expect(updated).toContain(`Updated ${id} every 1m`);
+    expect(updated).toContain('new prompt');
+
+    const after = JSON.parse(readFileSync(join(dir, 'edit.json'), 'utf8')).tasks[0];
+    expect(after.id).toBe(id);
+    expect(after.createdAt).toBe(before.createdAt);
+    expect(after.runs).toBe(0);
+    expect(after.everyMs).toBe(60_000);
+    expect(after.prompt).toBe('new prompt');
+    expect(after.maxRuns).toBe(20);
+  });
+
+  it('validates create and edit arguments', async () => {
     const { hooks, ctx } = await setup();
     const t = hooks.tool!.loops_task;
     await expect(t.execute({ action: 'create', interval: '30s' }, ctx)).rejects.toThrow(
@@ -76,6 +102,10 @@ describe('opencode loops_task tool', () => {
     );
     await expect(t.execute({ action: 'create', interval: '1s', prompt: 'x' }, ctx)).rejects.toThrow(
       'at least 5s',
+    );
+    await expect(t.execute({ action: 'edit' }, ctx)).rejects.toThrow('id is required for edit');
+    await expect(t.execute({ action: 'edit', id: 'missing', prompt: 'x' }, ctx)).rejects.toThrow(
+      'No loop missing',
     );
     await expect(t.execute({ action: 'delete' }, ctx)).rejects.toThrow('id is required');
   });

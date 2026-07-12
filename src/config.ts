@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { rename, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import type { Loop, LoopsFile } from './types';
 
@@ -33,6 +34,40 @@ export async function loadLoops(path: string): Promise<Loop[]> {
       cwd: def.cwd ? resolve(base, def.cwd) : base,
     } satisfies Loop;
   });
+}
+
+/** Replace loops.yaml atomically using the deliberately small supported shape. */
+export async function saveLoops(path: string, loops: Loop[]): Promise<void> {
+  const names = new Set<string>();
+  for (const loop of loops) {
+    validateLoopName(loop.name);
+    if (names.has(loop.name)) throw new Error(`duplicate loop name: ${loop.name}`);
+    names.add(loop.name);
+    if (!loop.run.trim()) throw new Error(`loop "${loop.name}" is missing a run command`);
+  }
+  const text = [
+    'loops:',
+    ...loops.flatMap((loop) => [
+      `  ${loop.name}:`,
+      ...(loop.schedule ? [`    schedule: ${quoteYaml(loop.schedule)}`] : []),
+      `    run: ${quoteYaml(loop.run)}`,
+      ...(loop.cwd ? [`    cwd: ${quoteYaml(loop.cwd)}`] : []),
+    ]),
+    '',
+  ].join('\n');
+  const temporary = `${path}.tmp-${process.pid}-${Date.now()}`;
+  await writeFile(temporary, text, { encoding: 'utf8', mode: 0o600 });
+  await rename(temporary, path);
+}
+
+export function validateLoopName(name: string): void {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(name)) {
+    throw new Error('loop name must be 1-64 letters, numbers, dots, underscores, or hyphens');
+  }
+}
+
+function quoteYaml(value: string): string {
+  return JSON.stringify(value);
 }
 
 /**
@@ -76,11 +111,21 @@ export function parseYaml(text: string): unknown {
 }
 
 function stripComment(s: string): string {
-  // Drop a trailing # comment that is not inside quotes.
+  // Drop a trailing # comment that is not inside quotes. Double-quoted values
+  // use JSON escapes, so an escaped quote must not close the string.
   let inS = false;
   let inD = false;
+  let escaped = false;
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (c === '\\' && inD) {
+      escaped = true;
+      continue;
+    }
     if (c === "'" && !inD) inS = !inS;
     else if (c === '"' && !inS) inD = !inD;
     else if (c === '#' && !inS && !inD && (i === 0 || s[i - 1] === ' '))
@@ -90,8 +135,13 @@ function stripComment(s: string): string {
 }
 
 function unquote(s: string): string {
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    return s.slice(1, -1);
+  if (s.startsWith('"') && s.endsWith('"')) {
+    try {
+      return JSON.parse(s) as string;
+    } catch {
+      return s.slice(1, -1);
+    }
   }
+  if (s.startsWith("'") && s.endsWith("'")) return s.slice(1, -1);
   return s;
 }

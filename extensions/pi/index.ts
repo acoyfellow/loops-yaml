@@ -34,7 +34,7 @@ interface ToolDetails {
 }
 
 interface ToolInput {
-  action: 'create' | 'list' | 'delete' | 'clear';
+  action: 'create' | 'edit' | 'list' | 'delete' | 'clear';
   interval?: string;
   prompt?: string;
   id?: string;
@@ -69,6 +69,7 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
   let timer: ReturnType<typeof setInterval> | undefined;
   let ctxRef: ExtensionContext | undefined;
   let busy = false;
+  let compactingTaskId: string | undefined;
 
   const persist = () => {
     pi.appendEntry(STATE_TYPE, { version: 1, tasks: [...tasks.values()] } satisfies PersistedState);
@@ -96,32 +97,8 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     }
   };
 
-  const tick = () => {
-    const ctx = ctxRef;
-    if (!ctx || busy || !ctx.isIdle()) return;
-    const now = Date.now();
-    prune(now);
-    const due = [...tasks.values()].find((task) => now >= task.nextRunAt);
-    if (!due) return;
-
-    // Guard against monotonic context growth: a long-lived loop injects a fresh
-    // prompt every interval into the SAME session, so context climbs until the
-    // model's output-token budget underflows and the gateway rejects the
-    // request. If we're near the window, compact now and let the task fire again
-    // next interval against a compacted context instead of injecting on top of a
-    // nearly-full window. markTaskRun already advanced nextRunAt, so skipping
-    // here costs one interval, not the task.
-    if (shouldCompactBeforeTick(ctx.getContextUsage(), due.compactThreshold)) {
-      // Reschedule (do NOT count as a run) before compacting, so the 1s check
-      // timer doesn't re-enter compact() every second while it runs.
-      tasks.set(due.id, { ...due, nextRunAt: now + due.everyMs });
-      persist();
-      ctx.compact();
-      ctxRef?.ui.notify('Loop compacted context before next tick (near context window).', 'info');
-      return;
-    }
-
-    const updated = markTaskRun(due, now);
+  const deliverTask = (task: RecurringTask, now: number) => {
+    const updated = markTaskRun(task, now);
     tasks.set(updated.id, updated);
     persist();
     updateStatus();
@@ -134,6 +111,96 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
       },
       { triggerTurn: true, deliverAs: 'followUp' },
     );
+  };
+
+  const tick = () => {
+    const ctx = ctxRef;
+    if (!ctx || busy || compactingTaskId || !ctx.isIdle()) return;
+    const now = Date.now();
+    prune(now);
+    const due = [...tasks.values()].find((task) => now >= task.nextRunAt);
+    if (!due) return;
+
+    if (shouldCompactBeforeTick(ctx.getContextUsage(), due.compactThreshold)) {
+      compactingTaskId = due.id;
+      // Reserve the next interval before starting compaction. A failed
+      // compaction retries later without counting a run or injecting into a
+      // nearly full context.
+      tasks.set(due.id, { ...due, nextRunAt: now + due.everyMs });
+      persist();
+      ctx.compact({
+        onComplete: () => {
+          if (ctxRef !== ctx || compactingTaskId !== due.id) return;
+          compactingTaskId = undefined;
+          const current = tasks.get(due.id);
+          if (!current || isTaskExpired(current)) return;
+          // This is still the same due tick: compaction must not silently drop
+          // it or delay it by a whole interval.
+          deliverTask(current, Date.now());
+        },
+        onError: (error) => {
+          if (ctxRef !== ctx || compactingTaskId !== due.id) return;
+          compactingTaskId = undefined;
+          ctx.ui.notify(
+            `Loop ${due.id} could not compact before its tick: ${error.message}`,
+            'error',
+          );
+        },
+      });
+      ctx.ui.notify('Loop is compacting context before its due tick.', 'info');
+      return;
+    }
+
+    deliverTask(due, now);
+  };
+
+  const editTask = (input: {
+    id: string;
+    interval?: string;
+    prompt?: string;
+    maxRuns?: number;
+    expiresIn?: string;
+    compactThreshold?: number;
+  }): RecurringTask => {
+    const existing = tasks.get(input.id);
+    if (!existing) throw new Error(`No loop ${input.id}.`);
+    if (
+      input.interval === undefined &&
+      input.prompt === undefined &&
+      input.maxRuns === undefined &&
+      input.expiresIn === undefined &&
+      input.compactThreshold === undefined
+    ) {
+      throw new Error(
+        'at least one of interval, prompt, maxRuns, expiresIn, or compactThreshold is required for edit',
+      );
+    }
+    const now = Date.now();
+    const everyMs = input.interval ? parseInterval(input.interval).everyMs : existing.everyMs;
+    const prompt = input.prompt === undefined ? existing.prompt : input.prompt.trim();
+    const maxRuns = input.maxRuns ?? existing.maxRuns;
+    if (!prompt) throw new Error('prompt is required');
+    if (maxRuns !== undefined && (!Number.isInteger(maxRuns) || maxRuns < 1 || maxRuns > 10_000)) {
+      throw new Error('maxRuns must be an integer between 1 and 10000');
+    }
+    const task: RecurringTask = {
+      ...existing,
+      prompt,
+      everyMs,
+      nextRunAt: input.interval ? now + everyMs : existing.nextRunAt,
+      maxRuns,
+      expiresAt: input.expiresIn
+        ? now + parseInterval(input.expiresIn).everyMs
+        : existing.expiresAt,
+      compactThreshold:
+        input.compactThreshold === undefined
+          ? existing.compactThreshold
+          : validateCompactThreshold(input.compactThreshold),
+    };
+    tasks.set(task.id, task);
+    persist();
+    updateStatus();
+    return task;
   };
 
   const createTask = (input: {
@@ -193,11 +260,13 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     timer = undefined;
     ctxRef?.ui.setStatus(STATUS_KEY, undefined);
     ctxRef = undefined;
+    compactingTaskId = undefined;
     tasks.clear();
   });
 
   pi.registerCommand('loop', {
-    description: 'Run a recurring prompt: /loop every 30s <prompt> | list | stop <id> | clear',
+    description:
+      'Run a recurring prompt: /loop every 30s <prompt> | edit <id> [every <interval>] [<prompt>] | list | stop <id> | clear',
     handler: async (args, ctx) => {
       const input = args.trim();
       if (input === 'list' || input === '') {
@@ -214,6 +283,16 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
         persist();
         updateStatus();
         ctx.ui.notify('Cleared all loops.', 'info');
+        return;
+      }
+      const edit = input.match(/^edit\s+(\S+)(?:\s+every\s+(\S+))?(?:\s+([\s\S]+))?$/);
+      if (edit) {
+        try {
+          const task = editTask({ id: edit[1]!, interval: edit[2], prompt: edit[3] });
+          ctx.ui.notify(`Updated ${taskLine(task)}.`, 'info');
+        } catch (error) {
+          ctx.ui.notify(error instanceof Error ? error.message : String(error), 'error');
+        }
         return;
       }
       const stop = input.match(/^(?:stop|delete|rm)\s+(\S+)$/);
@@ -244,15 +323,15 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     name: 'loops_task',
     label: 'Loops Task',
     description:
-      'Create, list, delete, or clear session-scoped recurring Pi prompts. Intervals support 30s, 5m, 2h, and 1d. Tasks run only while this Pi session is open and idle.',
+      'Create, edit, list, delete, or clear session-scoped recurring Pi prompts. Editing updates a running loop in place without stopping it. Intervals support 30s, 5m, 2h, and 1d. Tasks run only while this Pi session is open and idle. Near the context limit, compaction completes before the due tick is delivered.',
     promptSnippet: 'Manage session-scoped recurring prompts and stop conditions',
     promptGuidelines: [
       'Use loops_task when the user asks to check or repeat work on an interval.',
       'Delete a loops_task as soon as its terminal condition is satisfied.',
-      'Loops auto-compact the session before a tick at 80% context usage; set compactThreshold (0-1) to tune long-running loops.',
+      'Loops auto-compact before a due tick at 80% context usage; the same tick is delivered immediately after successful compaction.',
     ],
     parameters: Type.Object({
-      action: StringEnum(['create', 'list', 'delete', 'clear'] as const),
+      action: StringEnum(['create', 'edit', 'list', 'delete', 'clear'] as const),
       interval: Type.Optional(
         Type.String({ description: 'For create: interval such as 30s, 5m, 2h, or 1d' }),
       ),
@@ -262,17 +341,17 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
             'For create: complete prompt to execute each interval, including its stop condition',
         }),
       ),
-      id: Type.Optional(Type.String({ description: 'For delete: task id' })),
+      id: Type.Optional(Type.String({ description: 'For edit or delete: task id' })),
       maxRuns: Type.Optional(
         Type.Number({ description: 'For create: safety cap; defaults to 100' }),
       ),
       expiresIn: Type.Optional(
-        Type.String({ description: 'For create: expiry duration; defaults to 1d' }),
+        Type.String({ description: 'For create or edit: expiry duration; defaults to 1d' }),
       ),
       compactThreshold: Type.Optional(
         Type.Number({
           description:
-            'For create: compact the session before a tick once context usage reaches this fraction of the window (0-1 exclusive); defaults to 0.8',
+            'For create or edit: compact before a due tick at this context-window fraction (0-1 exclusive); defaults to 0.8',
         }),
       ),
     }),
@@ -289,6 +368,14 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
         persist();
         updateStatus();
         return { content: [{ type: 'text', text: 'Cleared all loops.' }], details: { tasks: [] } };
+      }
+      if (input.action === 'edit') {
+        if (!input.id) throw new Error('id is required for edit');
+        const task = editTask(input as ToolInput & { id: string });
+        return {
+          content: [{ type: 'text', text: `Updated ${taskLine(task)}.` }],
+          details: { task, tasks: [...tasks.values()] },
+        };
       }
       if (input.action === 'delete') {
         if (!input.id) throw new Error('id is required for delete');
