@@ -1,0 +1,23 @@
+extensions/pi/index.ts
+  s_449e2fc578432a::t_6f5950ecc18add 326,331,354
+test/core.test.ts
+  s_449e2fc578432a::t_2492dce7857fe9 151,154-159,163,165,170,172-175,180
+test/pi-tick-compaction.test.ts
+  s_449e2fc578432a::t_4fe98e582e57ab 111,130,144,152-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c5a93aae367b7b7ef3a5b23b4aa250afa77f82e6",
+  "prompts": {},
+  "sessions": {
+    "s_449e2fc578432a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019fd8bb-3c0b-7f5a-95a4-5e94b3461376",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
