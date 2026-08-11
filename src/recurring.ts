@@ -21,7 +21,6 @@ export interface RecurringTask {
   runs: number;
   maxRuns?: number;
   expiresAt?: number;
-  compactThreshold?: number;
 }
 
 export function formatInterval(ms: number): string {
@@ -76,27 +75,4 @@ export function markTaskRun(task: RecurringTask, now = Date.now()): RecurringTas
     runs: task.runs + 1,
     nextRunAt: now + task.everyMs,
   };
-}
-
-export interface ContextUsageLike {
-  tokens: number | null;
-  contextWindow: number;
-  percent: number | null;
-}
-
-export function shouldCompactBeforeTick(
-  usage: ContextUsageLike | undefined,
-  threshold?: number,
-): boolean {
-  if (threshold === undefined) return false;
-  if (!usage || usage.percent === null || usage.tokens === null) return false;
-  if (!(usage.contextWindow > 0)) return false;
-  return usage.percent >= threshold;
-}
-
-export function validateCompactThreshold(value: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || value >= 1) {
-    throw new Error('compactThreshold must be a number between 0 and 1 (exclusive), e.g. 0.8');
-  }
-  return value;
 }

@@ -18,8 +18,6 @@ import {
   parseInterval,
   parseLoopCommand,
   type RecurringTask,
-  shouldCompactBeforeTick,
-  validateCompactThreshold,
 } from '../src/recurring';
 
 const at = (s: string) => new Date(s);
@@ -147,53 +145,4 @@ loops:
   });
 });
 
-describe('shouldCompactBeforeTick', () => {
-  it('never compacts without an explicit threshold, at any usage', () => {
-    expect(
-      shouldCompactBeforeTick({ tokens: 220_000, contextWindow: 272_000, percent: 0.81 }),
-    ).toBe(false);
-    expect(
-      shouldCompactBeforeTick({ tokens: 267_798, contextWindow: 272_000, percent: 267_798 / 272_000 }),
-    ).toBe(false);
-    expect(shouldCompactBeforeTick({ tokens: 271_999, contextWindow: 272_000, percent: 0.999 })).toBe(
-      false,
-    );
-  });
 
-  it('does not compact below an opted-in threshold', () => {
-    expect(
-      shouldCompactBeforeTick({ tokens: 100_000, contextWindow: 272_000, percent: 0.37 }, 0.8),
-    ).toBe(false);
-  });
-
-  it('never compacts on unknown usage (defensive)', () => {
-    expect(shouldCompactBeforeTick(undefined, 0.8)).toBe(false);
-    // percent null happens right after a compaction, before the next LLM response
-    expect(
-      shouldCompactBeforeTick({ tokens: null, contextWindow: 272_000, percent: null }, 0.8),
-    ).toBe(false);
-    expect(shouldCompactBeforeTick({ tokens: 200_000, contextWindow: 0, percent: 0.9 }, 0.8)).toBe(
-      false,
-    );
-  });
-
-  it('honors an opted-in threshold', () => {
-    const usage = { tokens: 190_400, contextWindow: 272_000, percent: 0.7 };
-    expect(shouldCompactBeforeTick(usage, 0.7)).toBe(true);
-    expect(shouldCompactBeforeTick(usage, 0.75)).toBe(false);
-  });
-});
-
-describe('validateCompactThreshold', () => {
-  it('accepts values strictly between 0 and 1', () => {
-    expect(validateCompactThreshold(0.8)).toBe(0.8);
-    expect(validateCompactThreshold(0.5)).toBe(0.5);
-    expect(validateCompactThreshold(0.99)).toBe(0.99);
-  });
-
-  it('rejects out-of-range and non-finite values', () => {
-    for (const bad of [0, 1, -0.1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => validateCompactThreshold(bad)).toThrow();
-    }
-  });
-});
