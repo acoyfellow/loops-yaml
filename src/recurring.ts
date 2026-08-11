@@ -21,7 +21,6 @@ export interface RecurringTask {
   runs: number;
   maxRuns?: number;
   expiresAt?: number;
-  /** Fraction of the context window that triggers compaction before a tick. */
   compactThreshold?: number;
 }
 
@@ -79,8 +78,6 @@ export function markTaskRun(task: RecurringTask, now = Date.now()): RecurringTas
   };
 }
 
-export const DEFAULT_COMPACT_THRESHOLD = 0.8;
-
 export interface ContextUsageLike {
   tokens: number | null;
   contextWindow: number;
@@ -89,8 +86,9 @@ export interface ContextUsageLike {
 
 export function shouldCompactBeforeTick(
   usage: ContextUsageLike | undefined,
-  threshold = DEFAULT_COMPACT_THRESHOLD,
+  threshold?: number,
 ): boolean {
+  if (threshold === undefined) return false;
   if (!usage || usage.percent === null || usage.tokens === null) return false;
   if (!(usage.contextWindow > 0)) return false;
   return usage.percent >= threshold;

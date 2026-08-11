@@ -323,12 +323,12 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     name: 'loops_task',
     label: 'Loops Task',
     description:
-      'Create, edit, list, delete, or clear session-scoped recurring Pi prompts. Editing updates a running loop in place without stopping it. Intervals support 30s, 5m, 2h, and 1d. Tasks run only while this Pi session is open and idle. Near the context limit, compaction completes before the due tick is delivered.',
+      'Create, edit, list, delete, or clear session-scoped recurring Pi prompts. Editing updates a running loop in place without stopping it. Intervals support 30s, 5m, 2h, and 1d. Tasks run only while this Pi session is open and idle. Loops never compact on their own; the host handles context normally.',
     promptSnippet: 'Manage session-scoped recurring prompts and stop conditions',
     promptGuidelines: [
       'Use loops_task when the user asks to check or repeat work on an interval.',
       'Delete a loops_task as soon as its terminal condition is satisfied.',
-      'Loops auto-compact before a due tick at 80% context usage; the same tick is delivered immediately after successful compaction.',
+      'Loops do not compact context. Set compactThreshold only when a user asks a loop to compact before its ticks.',
     ],
     parameters: Type.Object({
       action: StringEnum(['create', 'edit', 'list', 'delete', 'clear'] as const),
@@ -351,7 +351,7 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
       compactThreshold: Type.Optional(
         Type.Number({
           description:
-            'For create or edit: compact before a due tick at this context-window fraction (0-1 exclusive); defaults to 0.8',
+            'For create or edit: opt in to compaction before a due tick at this context-window fraction (0-1 exclusive). Omitted means the loop never compacts.',
         }),
       ),
     }),

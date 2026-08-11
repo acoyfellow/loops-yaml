@@ -148,42 +148,39 @@ loops:
 });
 
 describe('shouldCompactBeforeTick', () => {
-  it('compacts at or above the default 80% threshold', () => {
+  it('never compacts without an explicit threshold, at any usage', () => {
     expect(
       shouldCompactBeforeTick({ tokens: 220_000, contextWindow: 272_000, percent: 0.81 }),
-    ).toBe(true);
-    expect(shouldCompactBeforeTick({ tokens: 217_600, contextWindow: 272_000, percent: 0.8 })).toBe(
-      true,
+    ).toBe(false);
+    expect(
+      shouldCompactBeforeTick({ tokens: 267_798, contextWindow: 272_000, percent: 267_798 / 272_000 }),
+    ).toBe(false);
+    expect(shouldCompactBeforeTick({ tokens: 271_999, contextWindow: 272_000, percent: 0.999 })).toBe(
+      false,
     );
   });
 
-  it('does not compact below the threshold', () => {
+  it('does not compact below an opted-in threshold', () => {
     expect(
-      shouldCompactBeforeTick({ tokens: 100_000, contextWindow: 272_000, percent: 0.37 }),
+      shouldCompactBeforeTick({ tokens: 100_000, contextWindow: 272_000, percent: 0.37 }, 0.8),
     ).toBe(false);
   });
 
   it('never compacts on unknown usage (defensive)', () => {
-    expect(shouldCompactBeforeTick(undefined)).toBe(false);
+    expect(shouldCompactBeforeTick(undefined, 0.8)).toBe(false);
     // percent null happens right after a compaction, before the next LLM response
-    expect(shouldCompactBeforeTick({ tokens: null, contextWindow: 272_000, percent: null })).toBe(
-      false,
-    );
-    expect(shouldCompactBeforeTick({ tokens: 200_000, contextWindow: 0, percent: 0.9 })).toBe(
+    expect(
+      shouldCompactBeforeTick({ tokens: null, contextWindow: 272_000, percent: null }, 0.8),
+    ).toBe(false);
+    expect(shouldCompactBeforeTick({ tokens: 200_000, contextWindow: 0, percent: 0.9 }, 0.8)).toBe(
       false,
     );
   });
 
-  it('honors a custom threshold', () => {
+  it('honors an opted-in threshold', () => {
     const usage = { tokens: 190_400, contextWindow: 272_000, percent: 0.7 };
     expect(shouldCompactBeforeTick(usage, 0.7)).toBe(true);
     expect(shouldCompactBeforeTick(usage, 0.75)).toBe(false);
-  });
-
-  it('reproduces the gpt-5.5 ceiling case: 268k/272k triggers compaction', () => {
-    // The observed crash: totalTokens rode 220k->268k until max_output_tokens underflowed to 1.
-    const nearCeiling = { tokens: 267_798, contextWindow: 272_000, percent: 267_798 / 272_000 };
-    expect(shouldCompactBeforeTick(nearCeiling)).toBe(true);
   });
 });
 

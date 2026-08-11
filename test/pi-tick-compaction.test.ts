@@ -108,7 +108,7 @@ function latestTask(h: ReturnType<typeof harness>) {
 describe.if(Boolean(loopsYamlPi))('pi loop tick compaction', () => {
   it('delivers the same due tick immediately after successful compaction', async () => {
     const h = harness({ tokens: 267_798, contextWindow: 272_000, percent: 267_798 / 272_000 });
-    await bindWithDueTask(h);
+    await bindWithDueTask(h, { compactThreshold: 0.8 });
 
     await Bun.sleep(1_100);
     expect(h.compactCalls).toBe(1);
@@ -127,7 +127,7 @@ describe.if(Boolean(loopsYamlPi))('pi loop tick compaction', () => {
 
   it('does not inject or count the tick when compaction fails', async () => {
     const h = harness({ tokens: 220_000, contextWindow: 272_000, percent: 220_000 / 272_000 });
-    await bindWithDueTask(h);
+    await bindWithDueTask(h, { compactThreshold: 0.8 });
 
     await Bun.sleep(1_100);
     h.failCompaction();
@@ -141,12 +141,23 @@ describe.if(Boolean(loopsYamlPi))('pi loop tick compaction', () => {
       undefined,
     ]) {
       const h = harness(usage);
-      await bindWithDueTask(h);
+      await bindWithDueTask(h, { compactThreshold: 0.8 });
       await Bun.sleep(1_100);
       expect(h.compactCalls).toBe(0);
       expect(h.sent).toHaveLength(1);
       await h.shutdown();
     }
+  });
+
+  it('never compacts a default loop, even against the context ceiling', async () => {
+    const h = harness({ tokens: 267_798, contextWindow: 272_000, percent: 267_798 / 272_000 });
+    await bindWithDueTask(h);
+
+    await Bun.sleep(1_100);
+    expect(h.compactCalls).toBe(0);
+    expect(h.sent).toHaveLength(1);
+    expect(h.sent[0].content).toContain('do work');
+    expect(latestTask(h).runs).toBe(1);
   });
 
   it('honors a per-task compactThreshold override', async () => {
