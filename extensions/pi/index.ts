@@ -17,6 +17,7 @@ import {
 
 const STATE_TYPE = 'loops-yaml-pi-state';
 const STATUS_KEY = 'loops-yaml';
+export const STOP_EVENT = 'loops:stop';
 const DEFAULT_MAX_RUNS = 100;
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1_000;
 const CHECK_INTERVAL_MS = 1_000;
@@ -191,6 +192,14 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     updateStatus();
     return task;
   };
+
+  pi.events.on(STOP_EVENT, (data: unknown) => {
+    const id = (data as { id?: unknown } | undefined)?.id;
+    if (typeof id !== 'string' || !tasks.delete(id)) return;
+    persist();
+    updateStatus();
+    ctxRef?.ui.notify(`Stopped loop ${id}.`, 'info');
+  });
 
   pi.on('session_start', async (_event, ctx) => {
     ctxRef = ctx;
