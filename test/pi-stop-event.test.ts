@@ -6,7 +6,7 @@ mock.module('typebox', () => {
   return { Type: { Object: schema, Optional: schema, String: schema, Number: schema } };
 });
 
-const { default: loopsYamlPi, STOP_EVENT } = await import('../extensions/pi/index');
+const { default: loopsYamlPi, STOP_EVENT, PAUSE_EVENT, RESUME_EVENT } = await import('../extensions/pi/index');
 
 type Listener = (data: unknown) => void;
 type Hook = (event: unknown, ctx: unknown) => Promise<unknown> | unknown;
@@ -73,4 +73,14 @@ it('ignores loops:stop for an unknown id or a malformed payload', async () => {
   pi.events.emit(STOP_EVENT, { id: 42 });
 
   expect(await call({ action: 'list' })).not.toBe('No active loops.');
+});
+
+it('a paused loop stays listed and resumes on loops:resume', async () => {
+  const { pi, call } = await startExtension();
+  const created = await call({ action: 'create', interval: '5m', prompt: 'tick' });
+  const id = created.match(/Created (\S+) every/)?.[1];
+  pi.events.emit(PAUSE_EVENT, { id });
+  expect(await call({ action: 'list' })).toContain(id ?? 'missing');
+  pi.events.emit(RESUME_EVENT, { id });
+  expect(await call({ action: 'list' })).toContain(id ?? 'missing');
 });

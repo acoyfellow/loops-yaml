@@ -18,6 +18,8 @@ import {
 const STATE_TYPE = 'loops-yaml-pi-state';
 const STATUS_KEY = 'loops-yaml';
 export const STOP_EVENT = 'loops:stop';
+export const PAUSE_EVENT = 'loops:pause';
+export const RESUME_EVENT = 'loops:resume';
 const DEFAULT_MAX_RUNS = 100;
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1_000;
 const CHECK_INTERVAL_MS = 1_000;
@@ -67,6 +69,7 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
   let timer: ReturnType<typeof setInterval> | undefined;
   let ctxRef: ExtensionContext | undefined;
   let busy = false;
+  const pausedIds = new Set<string>();
 
   const persist = () => {
     pi.appendEntry(STATE_TYPE, { version: 1, tasks: [...tasks.values()] } satisfies PersistedState);
@@ -115,7 +118,7 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     if (!ctx || busy || !ctx.isIdle()) return;
     const now = Date.now();
     prune(now);
-    const due = [...tasks.values()].find((task) => now >= task.nextRunAt);
+    const due = [...tasks.values()].find((task) => now >= task.nextRunAt && !pausedIds.has(task.id));
     if (!due) return;
 
     deliverTask(due, now);
@@ -192,6 +195,18 @@ export default function loopsYamlPi(pi: ExtensionAPI) {
     updateStatus();
     return task;
   };
+
+  pi.events.on(PAUSE_EVENT, (data: unknown) => {
+    const id = (data as { id?: unknown } | undefined)?.id;
+    if (typeof id !== 'string' || !tasks.has(id)) return;
+    pausedIds.add(id);
+  });
+
+  pi.events.on(RESUME_EVENT, (data: unknown) => {
+    const id = (data as { id?: unknown } | undefined)?.id;
+    if (typeof id !== 'string') return;
+    pausedIds.delete(id);
+  });
 
   pi.events.on(STOP_EVENT, (data: unknown) => {
     const id = (data as { id?: unknown } | undefined)?.id;
